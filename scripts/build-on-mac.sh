@@ -46,9 +46,15 @@ record() { RESULTS+=("$1|$2"); }
 
 say "repository : $REPO"
 say "host       : $(sw_vers -productName) $(sw_vers -productVersion) ($(uname -m))"
-say "xcode      : $(xcodebuild -version 2>/dev/null | head -1)"
-say "swift      : $(swift --version 2>/dev/null | head -1)"
+say "xcode      : $(xcodebuild -version 2>/dev/null | head -1 || echo 'NOT FOUND')"
+say "swift      : $(swift --version 2>/dev/null | head -1 || echo 'NOT FOUND')"
+say "node       : $(node --version 2>/dev/null || echo 'not installed (the web self-check will be skipped)')"
 say "log        : $LOG"
+
+if ! command -v xcodebuild >/dev/null 2>&1; then
+    note "xcodebuild was not found — install the Xcode command line tools:"
+    note "    xcode-select --install"
+fi
 
 # ---------------------------------------------------------------------------
 stage "1. static validators"
@@ -70,12 +76,17 @@ if command -v python3 >/dev/null 2>&1; then
         fi
     done
 
-    # The web app's own contract self-check.
-    if output=$(node apps/web/selfcheck.mjs 2>&1); then
-        ok "node apps/web/selfcheck.mjs ($(echo "$output" | grep -oE '[0-9]+/[0-9]+ checks passed' | tail -1))"
+    # The web app's own contract self-check.  macOS does not ship Node, so
+    # this one is optional — its absence is not a build failure.
+    if command -v node >/dev/null 2>&1; then
+        if output=$(node apps/web/selfcheck.mjs 2>&1); then
+            ok "node apps/web/selfcheck.mjs ($(echo "$output" | grep -oE '[0-9]+/[0-9]+ checks passed' | tail -1))"
+        else
+            bad "node apps/web/selfcheck.mjs"
+            echo "$output" | tail -20 | sed 's/^/        /'
+        fi
     else
-        bad "node apps/web/selfcheck.mjs"
-        echo "$output" | tail -20 | sed 's/^/        /'
+        note "node is not installed — skipping the web app self-check"
     fi
 
     # Every Swift file in the Sources build phase.

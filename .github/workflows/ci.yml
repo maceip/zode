@@ -87,6 +87,37 @@ jobs:
         run: python3 scripts/verify_release.py
 
   # ---------------------------------------------------------------------------
+  # Everything that does not need a Mac, a Windows box or an Android SDK.
+  # The suite skips what it cannot run, so it is the same command a
+  # contributor runs locally — and it is what catches a shell script with a
+  # syntax error before anyone runs it.
+  # ---------------------------------------------------------------------------
+  checks:
+    name: repo checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: The full local suite
+        run: bash scripts/verify.sh
+
+      - name: Every shell script parses
+        run: |
+          fail=0
+          while IFS= read -r -d '' f; do
+            bash -n "$f" || { echo "SYNTAX FAIL: $f"; fail=1; }
+          done < <(find . -name '*.sh' -not -path './.git/*' -print0)
+          exit $fail
+
+  # ---------------------------------------------------------------------------
   # Icons must be reproducible: regenerating them must not change the tree.
   # ---------------------------------------------------------------------------
   icons:

@@ -12,6 +12,29 @@ One product, five surfaces, one contract.
 
 ---
 
+## Download
+
+Every push to `main` cuts a release with real binaries. These links always point at the newest
+one:
+
+| Platform | File | What it is |
+|---|---|---|
+| **macOS** | [zode-macos-universal.dmg](https://github.com/maceip/zode/releases/latest/download/zode-macos-0.1.0-universal.dmg) | The native macOS shell in a disk image |
+| **Windows** | [zode-windows-x64.msi](https://github.com/maceip/zode/releases/latest/download/zode-windows-0.1.0-x64.msi) | Per-user installer, no admin rights |
+| **Windows** | [zode-windows-x64.zip](https://github.com/maceip/zode/releases/latest/download/zode-windows-0.1.0-x64.zip) | The portable build |
+| **Windows** | [zode-windows-x64.exe](https://github.com/maceip/zode/releases/latest/download/zode-windows-0.1.0-x64.exe) | Needs the `web/` folder beside it |
+| **Android** | [zode-android-debug.apk](https://github.com/maceip/zode/releases/latest/download/zode-android-0.1.0-debug.apk) | Debug build — install with "unknown sources" |
+| **iOS** | — | Builds from source; see [mobile/ios](mobile/ios/README.md) |
+
+[All releases →](https://github.com/maceip/zode/releases)
+
+> The macOS disk image is currently **signed ad-hoc, not notarised**, so a *downloaded* copy gets
+> macOS's "downloaded from the internet" warning and may be moved to the Trash. A copy you build
+> yourself on the same Mac is never quarantined and opens with no prompt. See
+> [docs/RELEASING.md](docs/RELEASING.md).
+
+---
+
 ## What this is
 
 Zode is a music-and-agent app with the visual language of the original Zune (2006–2011) and

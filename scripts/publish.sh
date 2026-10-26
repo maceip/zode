@@ -79,19 +79,21 @@ echo "==> 2. flipping the pre-releases"
 # so far was one, so the sidebar said "4 tags" and offered "Create a new
 # release" instead of listing the downloads.
 FLIPPED=0
-while read -r tag; do
-    [ -z "${tag}" ] && continue
+# The releases are patched by their numeric id.  The by-tag route answers
+# 404 for a PATCH, which is a confusing way to learn that.
+while read -r id tag; do
+    [ -z "${id}" ] && continue
     RESP=$(curl -sS -X PATCH \
         -H "Authorization: token ${TOKEN}" \
         -H "Accept: application/vnd.github+json" \
         -H "X-GitHub-Api-Version: 2022-11-28" \
-        "${API}/releases/tags/${tag}" \
+        "${API}/releases/${id}" \
         -d '{"prerelease":false,"make_latest":"true"}')
-    if echo "${RESP}" | grep -q '"prerelease":false'; then
-        echo "    ✔ ${tag}"
+    if echo "${RESP}" | grep -q '"prerelease": false'; then
+        echo "    \u2714 ${tag}"
         FLIPPED=$((FLIPPED + 1))
     else
-        echo "    ✘ ${tag} — $(echo "${RESP}" | head -1 | cut -c1-120)"
+        echo "    \u2718 ${tag} \u2014 $(echo "${RESP}" | tr -d '\n' | head -c 120)"
     fi
 done < <(auth "${API}/releases?per_page=100" | python3 -c "
 import sys, json
@@ -103,7 +105,7 @@ if isinstance(releases, dict):
     sys.exit(0)
 for r in releases:
     if r.get('prerelease') or r.get('draft'):
-        print(r['tag_name'])
+        print(r['id'], r['tag_name'])
 ")
 echo "    ${FLIPPED} flipped"
 

@@ -122,8 +122,16 @@ regenerating them changes the tree.
 
 **Releases are automatic.** `.github/workflows/release.yml` runs on every push to `main` and
 publishes a GitHub Release with a macOS `.dmg`, a Windows `.msi` and `.zip`, and an Android
-`.apk`. The macOS image is signed, **notarised and stapled**, so it opens without Gatekeeper
-complaining — see [docs/RELEASING.md](docs/RELEASING.md) for the one-time Apple setup.
+`.apk`.
+
+> **The macOS image is signed but not yet notarised.** Notarisation is Apple's service and needs
+> a paid Apple Developer account plus five repository secrets; the release workflow does the
+> whole pipeline the moment they are there. Until then a *downloaded* `.dmg` gets the
+> "downloaded from the internet" warning, because macOS quarantines every download and an
+> ad-hoc signature is not a signature Gatekeeper trusts. A copy you **build yourself** on the
+> same Mac is not quarantined and opens with no prompt at all. The setup is in
+> [docs/RELEASING.md](docs/RELEASING.md), and `./scripts/check-notarization.sh` tells you
+> exactly where you stand.
 
 
 
@@ -320,10 +328,13 @@ Creates the public `zode` repository, pushes `main`, and points `origin` at it.
 After that, **every push to `main` cuts a release automatically** — the
 [Release workflow](.github/workflows/release.yml) builds the macOS `.dmg`, the Windows `.msi` and
 `.zip`, and the Android `.apk`, and attaches them to a new GitHub Release. The macOS image is
-signed, notarised and stapled so it opens without a Gatekeeper warning.
+signed, and it is **notarised and stapled** too as soon as the five Apple secrets are in place —
+until then it is signed ad-hoc, and the release notes say so in plain words.
 
 The one-time Apple setup that notarisation needs is in
-**[docs/RELEASING.md](docs/RELEASING.md)**.
+**[docs/RELEASING.md](docs/RELEASING.md)**. If a notarisation ever fails, it does not take the
+release down: the image is still built, still signed, and still attached — it is just labelled as
+not notarised.
 
 ## Status
 

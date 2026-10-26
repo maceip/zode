@@ -118,6 +118,9 @@ jobs:
   macos:
     name: macOS (.dmg, notarised)
     runs-on: macos-15
+    outputs:
+      # 'notarized' or 'not-notarized' — the release notes have to say which.
+      notarized: ${{ steps.dmg.outputs.notarized }}
     steps:
       - uses: actions/checkout@v4
 
@@ -179,12 +182,16 @@ jobs:
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
+          # A wrong password must not take the whole release down: the disk
+          # image is still worth shipping, it just will not be notarised.
           xcrun notarytool store-credentials "zode-notary" \
             --apple-id "$APPLE_ID" \
             --team-id "$APPLE_TEAM_ID" \
-            --password "$APPLE_APP_SPECIFIC_PASSWORD"
+            --password "$APPLE_APP_SPECIFIC_PASSWORD" \
+            || echo "::warning::could not store the notarisation credentials — the disk image will not be notarised"
 
       - name: Build, sign and notarise the disk image
+        id: dmg
         env:
           ZODE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           ZODE_APP_VERSION: ${{ steps.ver.outputs.version }}
@@ -192,6 +199,12 @@ jobs:
         run: |
           chmod +x shells/macos/build-dmg.sh
           shells/macos/build-dmg.sh
+          # The build script says whether the image ended up notarised.
+          if [ -f shells/macos/build/notarization.status ]; then
+            echo "notarized=$(cat shells/macos/build/notarization.status)" >> "$GITHUB_OUTPUT"
+          else
+            echo "notarized=not-notarized" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Collect the disk image
         run: |
@@ -229,6 +242,8 @@ jobs:
         run: echo "version=$(cat VERSION | tr -d '[:space:]')" >> "$GITHUB_OUTPUT"
 
       - name: Write the release notes
+        env:
+          NOTARIZED: ${{ needs.macos.outputs.notarized }}
         run: |
           VERSION="${{ steps.ver.outputs.version }}"
           TAG="v${VERSION}-dev.${GITHUB_RUN_NUMBER}"
@@ -249,9 +264,16 @@ jobs:
             echo
             echo "### Installing on macOS"
             echo
-            echo "The disk image is signed, notarised and stapled, so it opens without a"
-            echo "Gatekeeper warning. If your copy still warns, right-click the app inside"
-            echo "the disk image and choose **Open** once."
+            if [ "${NOTARIZED}" = "notarized" ]; then
+              echo "The disk image is signed, **notarised and stapled**, so it opens with no"
+              echo "Gatekeeper warning and no \"downloaded from the internet\" prompt."
+            else
+              echo "> **This disk image is not notarised.**  macOS will warn about it, and a"
+              echo "> copy downloaded from here may be moved to the Trash.  It is signed, so"
+              echo "> right-click the app inside the disk image and choose **Open** once."
+              echo "> The one-time Apple setup that notarises it is in"
+              echo "> [\`docs/RELEASING.md\`](https://github.com/${{ github.repository }}/blob/main/docs/RELEASING.md)."
+            fi
             echo
             echo "### Installing on Windows"
             echo

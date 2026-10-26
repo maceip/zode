@@ -168,12 +168,58 @@ def check_version() -> None:
           f"VERSION contains {version!r}")
 
 
+def check_notarisation_fallback() -> None:
+    """A failed notarisation must not take the whole release down.
+
+    Before this, a wrong Apple password killed the macOS job, which killed
+    the release, which meant no artifacts at all.  Now the image is still
+    built, the status is written to a file, and the release notes say
+    which of the two it is.
+    """
+    script = read("shells", "macos", "build-dmg.sh")
+
+    check("the build script writes a notarisation status file",
+          "notarization.status" in script)
+
+    block = script
+    start = block.find("notarytool submit")
+    if start == -1:
+        check("the build script submits to the notary service", False,
+              "no `notarytool submit` in build-dmg.sh")
+        return
+    end = block.find('notarize_one "${APP}"', start)
+    block = block[start:end if end != -1 else len(script)]
+
+    check("a failed notarisation does not stop the build",
+          "|| die" not in block,
+          "`notarytool submit` still kills the build")
+    check("a failed notarisation is reported",
+          "NOTARIZED=\"no\"" in block,
+          "the NOTARIZED flag is not set on failure")
+    check("a successful notarisation is recorded",
+          "NOTARIZED=\"yes\"" in block,
+          "the NOTARIZED flag is not set on success")
+
+    workflow = read(".github", "workflows", "release.yml")
+    check("the macOS job exports the notarisation status",
+          "notarized: ${{ steps.dmg.outputs.notarized }}" in workflow)
+    check("the release notes read that status",
+          "needs.macos.outputs.notarized" in workflow)
+    check("the release notes say when the image is not notarised",
+          "not notarised" in workflow or "not notarized" in workflow,
+          "the notes do not warn about an un-notarised image")
+    check("a wrong Apple password does not fail the release",
+          "could not store the notarisation credentials" in workflow,
+          "store-credentials is still fatal")
+
+
 def main() -> int:
     print("  release tooling")
     check_release_workflow()
     check_macos_dmg()
     check_windows_msi()
     check_version()
+    check_notarisation_fallback()
 
     print(f"\n  {CHECKS - len(FAILURES)}/{CHECKS} release checks passed")
     return 1 if FAILURES else 0

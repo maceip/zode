@@ -5,7 +5,7 @@ mobile targets and attaches them to a GitHub Release.
 
 | Platform | Artifact | Notes |
 |---|---|---|
-| macOS | `zode-macos-<version>-universal.dmg` | Signed, **notarised**, stapled |
+| macOS | `zode-macos-<version>-universal.dmg` | Signed; **notarised and stapled** once the Apple secrets are in place |
 | Windows | `zode-windows-<version>-x64.msi` | Per-user install, no admin rights |
 | Windows | `zode-windows-<version>-x64.zip` | Portable build |
 | Windows | `zode-windows-<version>-x64.exe` | Needs the `web/` folder beside it |
@@ -43,9 +43,15 @@ once the app has been deleted. The only supported fix is the full Apple pipeline
 With the ticket stapled, Gatekeeper validates it offline and the app opens normally — no
 warning, no right-click, no Trash.
 
-`shells/macos/build-dmg.sh` does exactly these six steps.
+`shells/macos/build-dmg.sh` does exactly these six steps — and it does them for the app **and**
+for the disk image, because the disk image is the thing the user downloads.
 
 ### The one-time setup
+
+**Before anything else: a paid Apple Developer account.** Notarisation is a service Apple sells as
+part of the *Apple Developer Program* (US$99 a year). A free Apple id is not enough, and there is
+no way around this — the ticket can only come from Apple's servers, and only for a member. If the
+account is not enrolled, everything below still works, but the disk image cannot be notarised.
 
 **1. A Developer ID Application certificate.** On the Apple Developer portal
 (<https://developer.apple.com/account/resources/certificates/list>) create a
@@ -76,6 +82,23 @@ password".
 
 That is the whole setup. The workflow imports the certificate, stores the notarisation
 credentials as a `notarytool` keychain profile, and the release comes out notarised.
+
+### If something in that goes wrong
+
+**Nothing breaks.** A missing certificate, a wrong password, a failed submission — none of it
+takes the release down. The disk image is still built and signed, the build script writes
+`shells/macos/build/notarization.status`, the release notes say in plain words that the image is
+not notarised, and the artifacts are still attached. Only the one step fails, and it says so.
+
+To find out exactly where you stand, run the diagnostic on your Mac:
+
+```bash
+./scripts/check-notarization.sh                        # the last local build
+./scripts/check-notarization.sh ~/Downloads/zode.dmg   # a downloaded copy
+```
+
+It checks the signing identity, the signature, the hardened runtime, the stapled ticket, the
+quarantine attribute and what Gatekeeper would decide — and it changes nothing.
 
 ### Without the secrets
 

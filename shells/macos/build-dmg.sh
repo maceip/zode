@@ -57,6 +57,7 @@ APP_VERSION="${ZODE_APP_VERSION:-0.1.0}"
 
 NOTARIZE="yes"
 SKIP_BUILD="no"
+NOTARIZED="no"
 
 log()  { printf '\033[1m==> %s\033[0m\n' "$*"; }
 info() { printf '    %s\n' "$*"; }
@@ -222,14 +223,39 @@ notarize_one() {
     fi
 
     log "Notarising ${label}"
-    xcrun notarytool submit "${target}" "${submit_args[@]}" --wait \
-        || die "notarisation of ${label} failed"
+    # A failed notarisation must NOT take the whole build down.  The disk
+    # image is still worth shipping — it just has to be labelled as "not
+    # notarised", because a downloaded copy of it will be moved to the Trash
+    # by Gatekeeper.  The status file tells the release workflow which of
+    # the two it is.
+    if ! xcrun notarytool submit "${target}" "${submit_args[@]}" --wait; then
+        warn "notarisation of ${label} FAILED."
+        warn "the artefact is signed but not notarised — a downloaded copy will"
+        warn "be moved to the Trash.  See docs/RELEASING.md."
+        NOTARIZED="no"
+        return 0
+    fi
 
     log "Stapling ${label}"
-    xcrun stapler staple "${target}" || die "stapling ${label} failed"
-    xcrun stapler validate "${target}" || die "the stapled ticket of ${label} is not valid"
+    if ! xcrun stapler staple "${target}"; then
+        warn "stapling ${label} FAILED — the artefact is notarised but the"
+        warn "ticket does not travel with it, so Gatekeeper has to go online."
+        NOTARIZED="no"
+        return 0
+    fi
+
+    if ! xcrun stapler validate "${target}"; then
+        warn "the stapled ticket of ${label} is not valid."
+        NOTARIZED="no"
+        return 0
+    fi
+
     info "${label} is notarised and stapled"
+    NOTARIZED="yes"
 }
+
+# Where the release workflow looks to see whether the image is notarised.
+STATUS_FILE="${BUILD_DIR}/notarization.status"
 
 notarize_one "${APP}" "Zode.app"
 
@@ -286,6 +312,20 @@ else
     warn "See docs/RELEASING.md for the notarisation setup."
 fi
 
+# The status, so the release notes can say whether the image will open
+# without a Gatekeeper warning.
+if [ "${NOTARIZED}" = "yes" ]; then
+    printf 'notarized\n' > "${STATUS_FILE}"
+else
+    printf 'not-notarized\n' > "${STATUS_FILE}"
+fi
+
 log "Done"
 info "dmg         : ${DMG_PATH}"
 info "app version : ${APP_VERSION}"
+if [ "${NOTARIZED}" = "yes" ]; then
+    info "notarised   : yes — it will open without a Gatekeeper warning"
+else
+    info "notarised   : NO — a downloaded copy will be moved to the Trash"
+    info "             see docs/RELEASING.md for the one-time Apple setup"
+fi

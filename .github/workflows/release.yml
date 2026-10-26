@@ -103,7 +103,6 @@ jobs:
           $v = "${{ steps.ver.outputs.version }}"
           Copy-Item shells/windows/artifacts/release/*.msi "dist/zode-windows-$v-x64.msi"
           Copy-Item shells/windows/artifacts/release/*.zip "dist/zode-windows-$v-x64.zip"
-          Copy-Item shells/windows/artifacts/release/Zode.Shell.exe "dist/zode-windows-$v-x64.exe"
           Get-ChildItem dist | Format-Table Name, Length
 
       - uses: actions/upload-artifact@v4
@@ -261,7 +260,6 @@ jobs:
             echo "| **macOS** | [zode-macos-${VERSION}-universal.dmg](${BASE}/zode-macos-${VERSION}-universal.dmg) | 1 MB |"
             echo "| **Windows** | [zode-windows-${VERSION}-x64.msi](${BASE}/zode-windows-${VERSION}-x64.msi) | 34 MB |"
             echo "| **Windows** | [zode-windows-${VERSION}-x64.zip](${BASE}/zode-windows-${VERSION}-x64.zip) (portable) | 43 MB |"
-            echo "| **Windows** | [zode-windows-${VERSION}-x64.exe](${BASE}/zode-windows-${VERSION}-x64.exe) (needs the \`web/\` folder beside it) | 0.5 MB |"
             echo "| **Android** | [zode-android-${VERSION}-debug.apk](${BASE}/zode-android-${VERSION}-debug.apk) | 10 MB |"
             echo
             echo "Every file is a direct link — click one and it downloads."

@@ -213,6 +213,34 @@ def check_notarisation_fallback() -> None:
           "store-credentials is still fatal")
 
 
+def check_no_bare_exe() -> None:
+    """The bare .exe must not be shipped.
+
+    The Windows publish is self-contained, so `Zode.Shell.exe` is only the
+    ~520 KB apphost launcher.  It needs the ~100 MB of .NET runtime files
+    and the `web/` folder next to it, so on its own it downloads fine and
+    then fails to start.  The `.zip` is the portable build.
+    """
+    workflow = read(".github", "workflows", "release.yml")
+    attached = [ln for ln in workflow.splitlines()
+                if "Zode.Shell.exe" in ln and ("Copy-Item" in ln or "dist/" in ln)]
+    check("the release does not ship a bare .exe",
+          not attached
+          and "zode-windows-${VERSION}-x64.exe" not in workflow,
+          "the bare launcher is attached to the release again: "
+          + (attached[0].strip() if attached else "the download link is back"))
+
+    readme = read("README.md")
+    check("the README does not link a bare .exe",
+          "x64.exe" not in readme,
+          "the README links the launcher that cannot run on its own")
+
+    doc = read("docs", "RELEASING.md")
+    check("the release notes explain why",
+          "apphost launcher" in doc,
+          "docs/RELEASING.md does not say why there is no bare .exe")
+
+
 def main() -> int:
     print("  release tooling")
     check_release_workflow()
@@ -220,6 +248,7 @@ def main() -> int:
     check_windows_msi()
     check_version()
     check_notarisation_fallback()
+    check_no_bare_exe()
 
     print(f"\n  {CHECKS - len(FAILURES)}/{CHECKS} release checks passed")
     return 1 if FAILURES else 0

@@ -21,8 +21,7 @@ one:
 |---|---|---|
 | **macOS** | [zode-macos-universal.dmg](https://github.com/maceip/zode/releases/latest/download/zode-macos-0.1.0-universal.dmg) | The native macOS shell in a disk image |
 | **Windows** | [zode-windows-x64.msi](https://github.com/maceip/zode/releases/latest/download/zode-windows-0.1.0-x64.msi) | Per-user installer, no admin rights |
-| **Windows** | [zode-windows-x64.zip](https://github.com/maceip/zode/releases/latest/download/zode-windows-0.1.0-x64.zip) | The portable build |
-| **Windows** | [zode-windows-x64.exe](https://github.com/maceip/zode/releases/latest/download/zode-windows-0.1.0-x64.exe) | Needs the `web/` folder beside it |
+| **Windows** | [zode-windows-x64.zip](https://github.com/maceip/zode/releases/latest/download/zode-windows-0.1.0-x64.zip) | The portable build — unzip it and run `Zode.Shell.exe` |
 | **Android** | [zode-android-debug.apk](https://github.com/maceip/zode/releases/latest/download/zode-android-0.1.0-debug.apk) | Debug build — install with "unknown sources" |
 | **iOS** | — | Builds from source; see [mobile/ios](mobile/ios/README.md) |
 

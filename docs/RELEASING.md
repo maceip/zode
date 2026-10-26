@@ -8,7 +8,6 @@ mobile targets and attaches them to a GitHub Release.
 | macOS | `zode-macos-<version>-universal.dmg` | Signed; **notarised and stapled** once the Apple secrets are in place |
 | Windows | `zode-windows-<version>-x64.msi` | Per-user install, no admin rights |
 | Windows | `zode-windows-<version>-x64.zip` | Portable build |
-| Windows | `zode-windows-<version>-x64.exe` | Needs the `web/` folder beside it |
 | Android | `zode-android-<version>-debug.apk` | Debug build, install with "unknown sources" |
 
 The version comes from the `VERSION` file at the repository root. The tag is
@@ -166,6 +165,12 @@ The `.msi` is a **per-user** install: no administrator rights, the app lands in 
 **The web app ships next to the executable**, not inside it. The shell maps it into the webview
 with `SetVirtualHostNameToFolderMapping` and reads it from `AppContext.BaseDirectory\web`, so a
 single-file publish would break the app. That is why there is a `.zip` as well as a `.msi`.
+
+**There is no bare `.exe` asset, and there should not be one.** The publish is self-contained, so
+`Zode.Shell.exe` is only the ~520 KB apphost launcher — it needs the ~100 MB of .NET runtime
+files and the `web/` folder beside it to start at all. Shipping it on its own produced a file
+that downloaded fine and then failed to run, which is worse than not shipping it. The `.zip` is
+the portable build: unzip it, run `Zode.Shell.exe` from inside.
 
 There is **no signing key** for the Windows build, by design. The unsigned installer works:
 Windows SmartScreen may show a warning on first run, and "More info ▸ Run anyway" gets past it.

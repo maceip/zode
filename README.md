@@ -338,6 +338,13 @@ The one-time Apple setup that notarisation needs is in
   own constants (request types, event names, error codes, attachment sources, intent names).
 - The **macOS shell** passes a structural audit of the generated Xcode project and a
   cross-check of the contract's request types, intent names and error codes.
+- **Every Swift source parses** — all 48 files in the macOS shell and the iOS client go through
+  `swiftc -parse` (`scripts/check_swift.sh`). This is a syntax check, not a type check, but it
+  is what caught an unterminated `#if canImport(CoreHaptics)` block that would have failed the
+  macOS compile outright.
+- **Every Swift file is in the Xcode project's Sources phase** — a file that exists but is not
+  compiled is a "cannot find type in scope" error waiting to happen
+  (`tools/check_project_sources.py`).
 - Every generated Xcode project is **byte-deterministic** — re-running the generator produces
   an identical file.
 - `Info.plist` / `Zode.entitlements` parse as plists; the MSIX manifest and `appactions.json`
@@ -371,6 +378,18 @@ Each platform's `deliverable.md` separates *verified* from *not verified*. Read
 ```bash
 ./scripts/verify.sh        # every check that does not need a Mac / Windows box
 ```
+
+It runs 16 checks and skips 4 that genuinely need hardware (the macOS, Windows and Android
+compiles, and the iOS compile). Two of the checks want a toolchain and **skip quietly** when it
+is not installed, so the script works on a bare machine:
+
+```bash
+./scripts/check_swift.sh    # needs a Swift compiler   (swiftc -parse)
+./scripts/check_csharp.sh   # needs the .NET SDK       (Roslyn parse, no Windows needed)
+```
+
+Both are syntax checks, not type checks — they cannot replace `xcodebuild` and `dotnet build`,
+but they catch the same class of error in seconds instead of waiting for CI.
 
 
 ## Licence

@@ -139,6 +139,31 @@ check_release_tooling() {
 }
 
 # ---------------------------------------------------------------------------
+# Swift syntax.  `swiftc -parse` does not need the macOS SDK, so this runs
+# on Linux too.  It is a syntax check, not a type check.
+# ---------------------------------------------------------------------------
+check_swift_parses() {
+  bash scripts/check_swift.sh
+}
+
+# ---------------------------------------------------------------------------
+# C# syntax.  Roslyn parses the sources without resolving a reference, so
+# the Win32 and WebView2 types never have to exist — this runs on Linux too.
+# ---------------------------------------------------------------------------
+check_csharp_parses() {
+  bash scripts/check_csharp.sh
+}
+
+# ---------------------------------------------------------------------------
+# Every Swift file on disk must be in the Xcode project's Sources phase,
+# otherwise its types are "cannot find type in scope" at build time.
+# ---------------------------------------------------------------------------
+check_project_sources() {
+  python3 shells/macos/tools/check_project_sources.py
+  python3 mobile/ios/tools/check_project_sources.py
+}
+
+# ---------------------------------------------------------------------------
 # Secrets audit — nothing sensitive may be committed
 # ---------------------------------------------------------------------------
 check_no_secrets() {
@@ -167,6 +192,9 @@ run "python: all files compile"         check_python_compiles
 run "shell: syntax"                     check_shell_syntax
 run "security: no committed credentials" check_no_secrets
 run "release: workflow + installer"      check_release_tooling
+run "swift: every source parses"         check_swift_parses
+run "csharp: every source parses"        check_csharp_parses
+run "xcode: every source is compiled"    check_project_sources
 
 if [[ -f shells/macos/tools/validate_pbxproj.py ]]; then
   run "macOS: Xcode project structure"   run_macos_validator

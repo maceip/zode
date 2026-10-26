@@ -11,6 +11,8 @@ shells/windows/**/bin/
 shells/windows/**/obj/
 shells/windows/**/publish/
 shells/windows/artifacts/
+tools/csharp-syntax-check/bin/
+tools/csharp-syntax-check/obj/
 shells/macos/build/
 shells/macos/DerivedData/
 shells/macos/**/*.xcworkspace/

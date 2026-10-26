@@ -2,6 +2,7 @@ import Foundation
 
 #if canImport(CoreHaptics)
 import CoreHaptics
+#endif
 
 // =============================================================================
 // MARK: - CoreHaptics renderer (contract §7)

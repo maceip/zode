@@ -141,6 +141,9 @@ jobs:
           done < <(find shells/macos/Zode -name '*.swift' -print0)
           exit $fail
 
+      - name: Every Swift file is in the Sources build phase
+        run: python3 shells/macos/tools/check_project_sources.py
+
       - name: Build the app (unsigned)
         run: |
           cd shells/macos
@@ -178,6 +181,9 @@ jobs:
       - name: Static contract validation
         run: python3 shells/windows/tools/verify_shell.py
 
+      - name: Parse every C# source
+        run: bash scripts/check_csharp.sh
+
       - name: Build the shell
         run: |
           cd shells/windows
@@ -207,6 +213,9 @@ jobs:
 
       - name: Validate the generated project structure
         run: python3 mobile/ios/tools/validate_pbxproj.py
+
+      - name: Every Swift file is in the Sources build phase
+        run: python3 mobile/ios/tools/check_project_sources.py
 
       - name: Build for the simulator (unsigned)
         run: |

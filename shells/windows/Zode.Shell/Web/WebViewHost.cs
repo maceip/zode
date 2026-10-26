@@ -126,7 +126,11 @@ internal sealed class WebViewHost : IBridgeEventSink, IDisposable
         core.NewWindowRequested += OnNewWindowRequested;
         core.NavigationStarting += OnNavigationStarting;
         core.NavigationCompleted += OnNavigationCompleted;
-        core.DragStarting += OnDragStarting;
+        // No DragStarting handler here on purpose: that event only exists on
+        // ICoreWebView2CompositionController5, which is the *visual* hosting
+        // mode.  This shell hosts the webview in a child window, so the event
+        // would never fire.  File drops are handled by the OLE IDropTarget
+        // registered on the window instead (see FileDropTarget).
 
         try
         {
@@ -444,26 +448,10 @@ internal sealed class WebViewHost : IBridgeEventSink, IDisposable
     // ------------------------------------------------------------------
     // Drag & drop (contract §8)
     // ------------------------------------------------------------------
-    private void OnDragStarting(object? sender, CoreWebView2DragStartingEventArgs e)
-    {
-        try
-        {
-            IReadOnlyList<string> files = DataObjectReader.GetFilePaths(e.Data);
-            if (files.Count == 0)
-            {
-                return;
-            }
-
-            // We take over the drop: the page receives "attachment" events
-            // instead of a browser drop.
-            e.Handled = true;
-            _onFilesDropped(files);
-        }
-        catch (Exception ex)
-        {
-            Log.Error("webview", ex);
-        }
-    }
+    // The drop itself is handled by the OLE IDropTarget that is registered
+    // on the top level window, so a file dropped anywhere on the window —
+    // on the chrome, on the rail, on the page — becomes an "attachment"
+    // event.  See Attachments/FileDropTarget.cs.
 
     public void Dispose()
     {

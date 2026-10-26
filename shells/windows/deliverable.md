@@ -112,7 +112,7 @@ written (`packages/shared/**` and `apps/web/**` were only *read*).
 | File | Purpose |
 |---|---|
 | `Zode.Shell/Platform/AppIdentity.cs` | AUMID + per-user Start Menu shortcut (`IShellLink` + `IPersistFile` + `System.AppUserModel.ID`) — the precondition for unpackaged toasts. |
-| `Zode.Shell/Platform/NotificationService.cs` | `Windows.AppNotifications.AppNotificationManager` toasts + the `notificationAction` event. |
+| `Zode.Shell/Platform/NotificationService.cs` | `Windows.UI.Notifications` toasts; the `notificationAction` event arrives through the `zode://notification` protocol. |
 | `Zode.Shell/Platform/IntentService.cs` | The nine contract §4 intents: `intent.perform` and external activation. |
 | `Zode.Shell/Platform/ProtocolActivation.cs` | `zode://` deep links → `deepLink` / `search` / `intent` events; optional per-user protocol registration. |
 | `Zode.Shell/Platform/SearchService.cs` | `search.query` over the local index + the MSIX-only `ZODE_APP_CONTENT_SEARCH` code path. |
@@ -229,10 +229,11 @@ written (`packages/shared/**` and `apps/web/**` were only *read*).
 
 ### §9 — notifications
 
-`Windows.AppNotifications.AppNotificationManager` in
-`Platform/NotificationService`; the unpackaged preconditions (AppUserModelID +
-Start Menu shortcut with `System.AppUserModel.ID`) are implemented in
-`Platform/AppIdentity`.
+`Windows.UI.Notifications` in `Platform/NotificationService`; the unpackaged
+preconditions (AppUserModelID + Start Menu shortcut with
+`System.AppUserModel.ID`) are implemented in `Platform/AppIdentity`.  The
+activation comes back as a `zode://notification` URI, which
+`Platform/ProtocolActivation` routes to the `notificationAction` event.
 
 ### §10 — system search
 
@@ -529,10 +530,10 @@ node    .\tools\verify_against_web.mjs
   environment variable `ZODE_VHOST_ACCESS=allow` switches to `Allow` while
   debugging.  Both values appear in `Web/WebViewHost.cs`.
 * **One NuGet package**: `Microsoft.Web.WebView2` is the only `PackageReference`
-  in the project.  The Windows SDK projections (`Windows.AppNotifications`,
-  `Windows.Devices.Haptics`) come with the `net10.0-windows10.0.26100.0`
-  target framework, not from a package reference.  `Microsoft.Win32` is the
-  BCL registry API.
+  in the project.  The Windows SDK projections (`Windows.UI.Notifications`,
+  `Windows.Data.Xml.Dom`, `Windows.Devices.Haptics`) come with the
+  `net10.0-windows10.0.26100.0` target framework, not from a package
+  reference.  `Microsoft.Win32` is the BCL registry API.
 * **`setFullScreen` is the fill behaviour on Windows.**  The brief forbids the
   real-fullscreen hack (no `SetWindowDisplayAffinity`, no taskbar hiding), so
   `setFullScreen(true)` fills the whole display and `isFullScreen` reports

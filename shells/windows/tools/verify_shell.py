@@ -367,11 +367,13 @@ def check_contract_invariants() -> None:
     check("RegisterDragDrop" in blob, "IDropTarget is registered with RegisterDragDrop")
     check("DragQueryFileW" in blob, "dropped files are read with DragQueryFileW")
     check("IFileOpenDialog" in blob, "attach.pick uses IFileOpenDialog")
-    check("AppNotificationManager" in blob, "notifications use AppNotificationManager")
+    check("ToastNotificationManager" in blob, "notifications use the WinRT toast API")
+    check("CreateToastNotifier" in blob, "the toast is raised for the app's AUMID")
     check("SetCurrentProcessExplicitAppUserModelID" in blob, "an AppUserModelID is registered")
     check("IShellLinkW" in blob and "IPersistFile" in blob, "a Start Menu shortcut is created")
     check("ICustomDestinationList" in blob, "the Jump List uses ICustomDestinationList")
     check("journal.jsonl" in blob, "the journal writes a local activity log")
+    check("NotificationAction" in blob, "a toast activation raises the notificationAction event")
 
     # The haptic programs must not be hard coded: the csproj has to point at
     # the shared package.

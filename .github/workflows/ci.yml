@@ -98,7 +98,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: Install Pillow
-        run: pip install --quiet Pillow
+        run: pip install --quiet -r icons/requirements.txt
       - name: Regenerate and diff
         run: |
           python3 icons/make_icons.py
@@ -121,6 +121,14 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
+
+      - name: Stage the web app and regenerate the Xcode project
+        # The project has to be generated AFTER the web app is staged: the
+        # generator scans the source folder, so the bundled `web` folder
+        # only becomes a resource reference when it exists.
+        run: |
+          cd shells/macos
+          ./build.sh --stage-only
 
       - name: Generate the Xcode project (must be deterministic)
         run: |
@@ -147,9 +155,6 @@ jobs:
       - name: Build the app (unsigned)
         run: |
           cd shells/macos
-          # Stage the web app the same way build.sh does.
-          mkdir -p Zode/Resources/web
-          cp -R ../../apps/web/. Zode/Resources/web/
           xcodebuild \
             -project Zode.xcodeproj \
             -scheme Zode \
@@ -203,6 +208,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Stage the web app and regenerate the Xcode project
+        # The project has to be generated AFTER the web app is staged: the
+        # generator scans the source folder, so the bundled `web` folder
+        # only becomes a resource reference when it exists.
+        run: |
+          cd mobile/ios
+          mkdir -p ZodeMobile/Resources/web
+          cp -R ../../apps/web/. ZodeMobile/Resources/web/
+          python3 tools/generate_xcodeproj.py
+
       - name: Generate the Xcode project (must be deterministic)
         run: |
           cd mobile/ios
@@ -246,6 +261,14 @@ jobs:
           java-version: "17"
 
       - uses: android-actions/setup-android@v3
+        with:
+          # The default of the action asks for a package called "tools", which
+          # the SDK repository no longer carries, and "latest" resolves to a
+          # preview of the command line tools that demands its own licence
+          # acceptance.  Both are pinned here.
+          cmdline-tools-version: '12266719'
+          packages: 'platform-tools platforms;android-36 build-tools;36.0.0'
+          accept-android-sdk-licenses: true
 
       - name: Static validation
         run: python3 mobile/android/tools/verify_android.py

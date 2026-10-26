@@ -1,6 +1,5 @@
 // ShellApplication.cs — the composition root of the Zode Windows shell.
 
-using System.Text.Json.Nodes;
 using Zode.Shell.Attachments;
 using Zode.Shell.Bridge;
 using Zode.Shell.Diagnostics;
@@ -69,7 +68,6 @@ internal sealed class ShellApplication : IDisposable
 
         _window.ClientSizeChanged += OnClientSizeChanged;
         _webView.PageReady += OnPageReady;
-        _notifications.NotificationAction += OnNotificationAction;
         _guard.CommandLineReceived += OnForwardedCommandLine;
 
         _pendingDeepLink = ProtocolActivation.FindDeepLink(args);
@@ -114,13 +112,6 @@ internal sealed class ShellApplication : IDisposable
             }
         }, null);
     }
-
-    private void OnNotificationAction(string id, string action) =>
-        _webView.Emit(EventNames.NotificationAction, new JsonObject
-        {
-            ["id"] = id,
-            ["action"] = action,
-        });
 
     /// <summary>
     /// A file was dropped anywhere on the window (contract §8).  Every file
@@ -177,10 +168,8 @@ internal sealed class ShellApplication : IDisposable
 
         _disposed = true;
         _guard.CommandLineReceived -= OnForwardedCommandLine;
-        _notifications.NotificationAction -= OnNotificationAction;
         _webView.Dispose();
         _haptics.Dispose();
-        _notifications.Dispose();
         _window.Dispose();
     }
 }

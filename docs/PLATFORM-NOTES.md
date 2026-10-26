@@ -166,7 +166,7 @@ faking a borderless-but-resizable window is far more reliable with `WM_NCCALCSIZ
 
 | Feature | API | Caveat |
 |---|---|---|
-| Notifications | `Windows.AppNotifications.AppNotificationManager` | An **unpackaged** app must register an `AppUserModelID` and create a Start Menu shortcut, or notifications silently fail. `AppIdentity.cs` does both. |
+| Notifications | `Windows.UI.Notifications` | An **unpackaged** app must register an `AppUserModelID` and create a Start Menu shortcut, or notifications silently fail. `AppIdentity.cs` does both. The activation comes back through the `zode://notification` protocol. |
 | Intents | App Actions (`msix/appactions.json`) | Requires **package identity** → MSIX. |
 | Search | App Content Search (Windows App SDK 2.5.1) | Also MSIX-only. A protocol handler (`zode://search?q=…`) is the fallback that works unpackaged. |
 | Journal | — | **Windows has no system journal.** `journal.write` resolves successfully and appends to `%LOCALAPPDATA%\Zode\journal.jsonl`. |

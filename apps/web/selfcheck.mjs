@@ -21,7 +21,8 @@
  */
 
 import { spawnSync } from 'node:child_process';
-import { readdir, readFile, stat } from 'node:fs/promises';
+import { readdir, readFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -683,15 +684,18 @@ await test('the bundled copies of the shared files are byte identical', async ()
   }
 });
 
-await test('nothing outside apps/web was modified', async () => {
-  const ownStat = await stat(join(HERE, 'index.html'));
-  for (const name of ['contract.md', 'haptics.json', 'tokens.css']) {
-    const sharedStat = await stat(join(SHARED, name));
-    assert(
-      sharedStat.mtimeMs < ownStat.mtimeMs,
-      `packages/shared/${name} was touched after the web app was written`,
-    );
-  }
+await test('the web app matches the frozen contract', async () => {
+  // A fingerprint, not a timestamp.  A fresh `git checkout` gives every file
+  // the same modification time, so comparing mtimes is a coin flip in CI —
+  // and it was failing there for exactly that reason.
+  const contract = await readFile(join(SHARED, 'contract.md'));
+  const fingerprint = createHash('sha256').update(contract).digest('hex');
+  const recorded = (await readFile(join(HERE, 'assets', 'contract.sha256'), 'utf8').catch(() => '')).trim();
+  assert(
+    recorded === fingerprint,
+    'packages/shared/contract.md changed without the web app being updated — ' +
+      'run `node tools/sync-shared.mjs`',
+  );
 });
 
 // ---------------------------------------------------------------------------

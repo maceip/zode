@@ -194,7 +194,7 @@ a desktop, the waveform is an audio fallback.
 
 | Feature | Status |
 |---|---|
-| **Notifications** (§9) | `Windows.AppNotifications.AppNotificationManager`.  An unpackaged app needs an `AppUserModelID` **and** a Start Menu shortcut, otherwise the toast silently disappears — `Platform/AppIdentity.cs` does both at start-up. |
+| **Notifications** (§9) | `Windows.UI.Notifications`.  An unpackaged app needs an `AppUserModelID` **and** a Start Menu shortcut, otherwise the toast silently disappears — `Platform/AppIdentity.cs` does both at start-up.  The activation comes back through the `zode://notification` protocol, which `ProtocolActivation.cs` already handles. |
 | **App Actions / intents** (§4) | `msix/Package.appxmanifest` declares the `windows.appActions` extension and `msix/appactions.json` defines one action per contract intent.  **Requires package identity (MSIX).**  The actions activate the app through the `zode://` protocol, so the same intents work unpackaged too. |
 | **Deep links** (§2) | `zode://` is registered in the manifest (`windows.protocol`).  `Platform/ProtocolActivation.cs` turns the URI into `deepLink` / `search` / `intent` events.  For the unpackaged build `Zode.Shell.exe --register-protocol` writes the per-user `HKCU\Software\Classes\zode` entry. |
 | **System search** (§10) | **Not fully available.**  The "App Content Search" APIs (Windows App SDK 2.5.1) are in limited access and require package identity, so the real implementation sits behind the `ZODE_APP_CONTENT_SEARCH` compile constant.  The working fallback is the protocol handler: Windows Search can call `zode://search?q=…`, which re-activates the app and raises a `search` event.  `search.query` answers from the shell's local index (everything that was attached). |

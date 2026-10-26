@@ -10,7 +10,8 @@
  *   node tools/sync-shared.mjs --check  → verify only (exit 1 on drift)
  */
 
-import { copyFile, readFile } from 'node:fs/promises';
+import { copyFile, readFile, writeFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -39,6 +40,29 @@ for (const name of FILES) {
   }
   await copyFile(from, to);
   console.log(`copied: packages/shared/${name} → apps/web/assets/${name}`);
+}
+
+// The contract is a specification, not a file the app ships, so it is not
+// copied.  Instead the app records its fingerprint, and the self check
+// fails when the contract changes without the app being updated.
+//
+// A fingerprint, not a timestamp: a fresh `git checkout` gives every file
+// the same modification time, so comparing mtimes is a coin flip in CI.
+const CONTRACT = join(SHARED, 'contract.md');
+const CONTRACT_FINGERPRINT = join(APP, 'assets', 'contract.sha256');
+const contractHash = createHash('sha256').update(await readFile(CONTRACT)).digest('hex');
+
+if (checkOnly) {
+  const recorded = (await readFile(CONTRACT_FINGERPRINT, 'utf8').catch(() => '')).trim();
+  if (recorded !== contractHash) {
+    console.error('drift: packages/shared/contract.md changed without the web app being updated');
+    drifted = true;
+  } else {
+    console.log('ok:    the web app matches packages/shared/contract.md');
+  }
+} else {
+  await writeFile(CONTRACT_FINGERPRINT, `${contractHash}\n`);
+  console.log(`wrote: apps/web/assets/contract.sha256 (${contractHash.slice(0, 16)}…)`);
 }
 
 process.exit(drifted ? 1 : 0);

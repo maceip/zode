@@ -328,8 +328,11 @@ AppKit calls before the web content sees the drag.
 ## 9. Notifications
 
 - macOS: `UNUserNotificationCenter` (requires a bundled app, signed with the developer profile).
-- Windows: `Windows.AppNotifications.AppNotificationManager`. Unpackaged apps must register an
-  `AppUserModelID` and a Start Menu shortcut for notifications to work.
+- Windows: `Windows.UI.Notifications` — the classic WinRT toast API. Unpackaged apps must register an
+  `AppUserModelID` and a Start Menu shortcut for notifications to work, and the activation comes
+  back through the app's own `zode://notification` protocol. (`Windows.AppNotifications` would mean
+  taking a dependency on the Windows App SDK, and this shell deliberately depends on nothing but
+  WebView2.)
 
 ---
 

@@ -196,9 +196,20 @@ def file_type(node: FileNode) -> str:
 
 
 def escape(value: str) -> str:
-    """Quote a value when the OpenStep plist format needs it."""
+    """Quote a value when the OpenStep plist format needs it.
+
+    The old-style plist reserves parentheses, so a build setting like
+    `$(ZODE_TEAM_ID)` has to be written as `"$(ZODE_TEAM_ID)"`.  Xcode
+    refuses to open a project whose plist is malformed, and it does not
+    always say which file is at fault.
+
+    A value that is already a quoted literal is left alone, so the caller
+    can pre-quote a setting that needs a comma in it.
+    """
     if value == "":
         return '""'
+    if value.startswith('"') and value.endswith('"') and len(value) >= 2:
+        return value
     safe = set(
         "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_$./"
     )
@@ -503,7 +514,7 @@ def write_pbxproj(
         out.append("\t\t\tisa = XCBuildConfiguration;")
         out.append("\t\t\tbuildSettings = {")
         for key, value in settings:
-            out.append("\t\t\t\t%s = %s;" % (key, value))
+            out.append("\t\t\t\t%s = %s;" % (key, escape(value)))
         out.append("\t\t\t};")
         out.append("\t\t\tname = %s;" % name)
         out.append("\t\t};")

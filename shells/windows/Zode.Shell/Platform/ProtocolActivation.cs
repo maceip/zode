@@ -77,6 +77,16 @@ internal sealed class ProtocolActivation
 
         switch (host)
         {
+            case NotificationService.NotificationHost:
+                // A toast activation (contract §9).  The notification id and
+                // the action the user picked travel in the query string.
+                _sink.Emit(EventNames.NotificationAction, new JsonObject
+                {
+                    ["id"] = query.TryGetValue("id", out string? notificationId) ? notificationId : string.Empty,
+                    ["action"] = query.TryGetValue("action", out string? action) ? action : "open",
+                });
+                break;
+
             case "search":
                 _sink.Emit(EventNames.Search, new JsonObject
                 {

@@ -97,8 +97,14 @@ class _Parser:
             self.position += 1
             value = self.parse_value()
             self.skip_whitespace()
-            if self.peek() == ";":
-                self.position += 1
+            # The semicolon is NOT optional.  Xcode refuses to open a
+            # project whose dictionary is missing one, and it reports it as
+            # a parse error rather than pointing at the real cause -- an
+            # unquoted `$(...)` in a build setting, for instance, is read
+            # as the bare string `$` followed by a stray parenthesis.
+            if self.peek() != ";":
+                raise self.error("Missing ';' after the value of %r" % (key,))
+            self.position += 1
             result[key] = value
 
     def parse_array(self) -> List[Any]:
@@ -156,20 +162,6 @@ class _Parser:
             if character in BARE_CHARS:
                 chunks.append(character)
                 self.position += 1
-                continue
-            if character == "(":
-                # A build setting reference such as `$(ZODE_TEAM_ID)`.
-                depth = 0
-                while self.position < len(self.text):
-                    inner = self.text[self.position]
-                    if inner == "(":
-                        depth += 1
-                    elif inner == ")":
-                        depth -= 1
-                    chunks.append(inner)
-                    self.position += 1
-                    if depth == 0:
-                        break
                 continue
             break
         if not chunks:

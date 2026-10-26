@@ -5,6 +5,8 @@
 #   ./build.sh                 # Release archive + export
 #   ./build.sh --debug         # Debug build (no archive)
 #   ./build.sh --unsigned      # build without a development team
+#   ./build.sh --stage-only    # only stage the resources and the project
+#                              # (build-dmg.sh does its own xcodebuild)
 #
 # Environment
 #   ZODE_TEAM_ID       the Apple Developer team id (required for signing)
@@ -34,6 +36,7 @@ SIGN_IDENTITY="${ZODE_SIGN_IDENTITY:-}"
 EXPORT_METHOD="${ZODE_EXPORT_METHOD:-developer-id}"
 CONFIGURATION="Release"
 UNSIGNED="no"
+STAGE_ONLY="no"
 
 log()  { printf '\033[1m==> %s\033[0m\n' "$*"; }
 info() { printf '    %s\n' "$*"; }
@@ -41,10 +44,11 @@ die()  { printf '\033[31merror: %s\033[0m\n' "$*" >&2; exit 1; }
 
 while [ $# -gt 0 ]; do
     case "$1" in
-        --debug)    CONFIGURATION="Debug"; shift ;;
-        --unsigned) UNSIGNED="yes"; shift ;;
-        --help|-h)  sed -n '2,20p' "$0"; exit 0 ;;
-        *)          die "unknown option '$1' (try --help)" ;;
+        --debug)     CONFIGURATION="Debug"; shift ;;
+        --unsigned)  UNSIGNED="yes"; shift ;;
+        --stage-only) STAGE_ONLY="yes"; shift ;;
+        --help|-h)   sed -n '2,20p' "$0"; exit 0 ;;
+        *)           die "unknown option '$1' (try --help)" ;;
     esac
 done
 
@@ -129,6 +133,11 @@ if [ -d "${WEB_SOURCE}/src/bridge" ]; then
     python3 "${SCRIPT_DIR}/tools/verify_against_web.py" || die "the shell and the web app do not match"
 else
     info "skipping the web app cross-check (no src/bridge in ${WEB_SOURCE})"
+fi
+
+if [ "${STAGE_ONLY}" = "yes" ]; then
+    log "Staged. The resources and the Xcode project are ready."
+    exit 0
 fi
 
 # -----------------------------------------------------------------------------

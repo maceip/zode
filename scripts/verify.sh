@@ -130,6 +130,15 @@ check_shell_syntax() {
 }
 
 # ---------------------------------------------------------------------------
+# The release tooling — the workflow, the installer source, the disk image
+# script.  Static checks only: it does not need a Mac, a Windows box or an
+# Apple account.
+# ---------------------------------------------------------------------------
+check_release_tooling() {
+  python3 scripts/verify_release.py
+}
+
+# ---------------------------------------------------------------------------
 # Secrets audit — nothing sensitive may be committed
 # ---------------------------------------------------------------------------
 check_no_secrets() {
@@ -157,6 +166,7 @@ run "library: in sync across platforms" check_library_sync
 run "python: all files compile"         check_python_compiles
 run "shell: syntax"                     check_shell_syntax
 run "security: no committed credentials" check_no_secrets
+run "release: workflow + installer"      check_release_tooling
 
 if [[ -f shells/macos/tools/validate_pbxproj.py ]]; then
   run "macOS: Xcode project structure"   run_macos_validator

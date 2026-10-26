@@ -18,6 +18,13 @@ Zode is a music-and-agent app with the visual language of the original Zune (200
 Microsoft's Metro design language: flat square tiles, a near-black or warm-paper canvas,
 Segoe-style light display type, uppercase tracked labels, and fast "reveal" motion.
 
+It is also an **experimental departure from the three-column app that rules today**. Where the
+dominant music services stack a navigation column, a list column and a detail column and ask you
+to scroll between them, Zode is one full-window canvas — a poster wall of albums and a single
+focused pane that takes over the whole surface when you need it. The chrome is the app, the
+window has no title bar, and the content owns every pixel. It is a sketch of what a music app
+could be if it were built for the screen instead of for the scroll.
+
 The desktop apps are **native shells** that render the web app in the **system webview** —
 `WKWebView` on macOS, **Edge WebView2** on Windows — with **no native window controls at all**.
 The window chrome is the app's own cards and typography. The single concession is a **34 px drag
@@ -36,6 +43,89 @@ screen with this app window**.
   <img src="docs/screenshots/web-now-playing.png" width="49%" alt="Now Playing" />
   <img src="docs/screenshots/web-collection.png" width="49%" alt="Collection" />
 </p>
+
+## How to use
+
+**Thirty seconds, in a browser.** No build step, no dependencies:
+
+```bash
+node apps/web/serve.mjs      # then open http://localhost:5173
+```
+
+The browser build is the same app the native shells host, so everything below works there too —
+minus the native window behaviour and the platform integrations.
+
+**The desktop app.** Every push to `main` cuts a release with installers attached — see
+[Releases](../../releases) for `zode-macos-<version>-universal.dmg`, `zode-windows-<version>-x64.msi`
+and `zode-android-<version>-debug.apk`. Install and launch; there is no account, no sign-in, and
+no network requirement.
+
+**Moving the window.** The **34 px strip across the top** is the only part of the window that
+moves it. Drag it to move the window; **double-click it to fill the screen** with the app (the
+whole display, menu bar included). Everything below the strip is content, and clicks there go to
+the app.
+
+**Dropping files.** Drag a file anywhere onto the window and it arrives in the app as an
+attachment. On macOS, dropping a file on the **dock icon** does the same thing. The Agent view
+picks attachments up and can act on them.
+
+**The agent.** Open the **Agent** view from the rail (or the ✦ button in the strip), describe a
+task, and press ⌘↵ / Ctrl↵ to send it. While the agent works, the app gives a tiny slow haptic
+wave; when a task finishes you get the triple roll.
+
+**Keyboard.**
+
+| Key | What it does |
+|---|---|
+| `⌘F` / `Ctrl+F` | Jump to search |
+| `Space` | Play / pause |
+| `←` `→` | Previous / next track |
+| `↵` | Open the selected item |
+| `⌘↵` / `Ctrl↵` | Send the agent task |
+
+**The canvas.** The half-filled disc in the strip switches between the near-black **ink** canvas
+and the warm **paper** canvas. The choice is remembered, and the iOS and Android clients offer
+the same pair.
+
+## How it's made
+
+**One contract, five surfaces.** `packages/shared/contract.md` is the frozen contract. The web
+app never talks to a platform transport; it only calls `window.zode`. Each shell installs a thin
+adapter that maps that API onto its own transport, so a feature added to the contract shows up on
+every platform at once.
+
+| Layer | macOS | Windows | iOS | Android | Web |
+|---|---|---|---|---|---|
+| Surface | `WKWebView` | Edge WebView2 | SwiftUI | Jetpack Compose | plain ESM |
+| Window | Borderless `NSWindow` | Raw Win32 | — | — | — |
+| Haptics | CoreHaptics | `waveOut` synth | CoreHaptics | `VibrationEffect` | WebAudio |
+| Platform glue | App Intents, Media Intents, Journaling, CoreSpotlight | App Actions, App Content Search, toasts | App Intents | Search intents, notifications | — |
+| Language | Swift | C# / .NET 10 | Swift | Kotlin | JavaScript |
+
+**The web app has no dependencies and no build step.** Plain ES modules, served as-is. That is not
+a purity exercise: it means both native shells can bundle `apps/web/` verbatim and cannot drift
+from it, and there is no bundler to break.
+
+**Haptics are data.** `packages/shared/haptics.json` holds waveform *programs* — event lists with
+intensity and sharpness curves. Each platform renders the same program with the best engine it
+has, so "done" (a triple roll) and "working" (a tiny slow wave) mean the same thing everywhere.
+Where a platform has no haptic hardware the app says so in `capabilities.haptics` rather than
+pretending.
+
+**One library, everywhere.** `scripts/dump_library.mjs` imports the web app and writes
+`packages/shared/library.json`; the iOS and Android clients decode that same file. The library
+cannot drift between platforms because there is only one copy of it.
+
+**Icons are generated.** `icons/make_icons.py` produces the `.icns`, the `.ico`, the Android
+densities, the favicon and the social preview from a single source PNG, and CI fails if
+regenerating them changes the tree.
+
+**Releases are automatic.** `.github/workflows/release.yml` runs on every push to `main` and
+publishes a GitHub Release with a macOS `.dmg`, a Windows `.msi` and `.zip`, and an Android
+`.apk`. The macOS image is signed, **notarised and stapled**, so it opens without Gatekeeper
+complaining — see [docs/RELEASING.md](docs/RELEASING.md) for the one-time Apple setup.
+
+
 
 ## Why it is shaped like this
 
@@ -226,6 +316,14 @@ export GH_TOKEN=ghp_xxxxxxxx   # scope: repo
 ```
 
 Creates the public `zode` repository, pushes `main`, and points `origin` at it.
+
+After that, **every push to `main` cuts a release automatically** — the
+[Release workflow](.github/workflows/release.yml) builds the macOS `.dmg`, the Windows `.msi` and
+`.zip`, and the Android `.apk`, and attaches them to a new GitHub Release. The macOS image is
+signed, notarised and stapled so it opens without a Gatekeeper warning.
+
+The one-time Apple setup that notarisation needs is in
+**[docs/RELEASING.md](docs/RELEASING.md)**.
 
 ## Status
 

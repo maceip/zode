@@ -1,0 +1,279 @@
+name: Release
+
+# Every push to main (a merge, a direct push, whatever) cuts a new release
+# with a fresh set of debug builds.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: "Why this manual run is happening"
+        required: false
+        default: "manual"
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+env:
+  VERSION: "0.1.0"
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Android — a debug APK.
+  # ---------------------------------------------------------------------------
+  android:
+    name: Android (debug APK)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Read the version
+        id: ver
+        run: echo "version=$(cat VERSION | tr -d '[:space:]')" >> "$GITHUB_OUTPUT"
+
+      - name: Assemble the debug APK
+        working-directory: mobile/android
+        run: ./gradlew :app:assembleDebug --no-daemon --stacktrace
+
+      - name: Collect the APK
+        run: |
+          mkdir -p dist
+          cp mobile/android/app/build/outputs/apk/debug/app-debug.apk \
+             "dist/zode-android-${{ steps.ver.outputs.version }}-debug.apk"
+          ls -la dist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: zode-android
+          path: dist/*.apk
+          if-no-files-found: error
+
+  # ---------------------------------------------------------------------------
+  # Windows — an .msi installer, a portable .zip and the bare .exe.
+  # ---------------------------------------------------------------------------
+  windows:
+    name: Windows (.msi + .zip)
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Read the version
+        id: ver
+        shell: pwsh
+        run: |
+          $v = (Get-Content VERSION -Raw).Trim()
+          "version=$v" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+
+      - name: Build the installer and the portable zip
+        shell: pwsh
+        run: |
+          # Self-contained, so the installed app needs no .NET runtime.
+          ./shells/windows/build-msi.ps1 -Configuration Release -SelfContained
+
+      - name: Collect the artifacts
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path dist | Out-Null
+          $v = "${{ steps.ver.outputs.version }}"
+          Copy-Item shells/windows/artifacts/release/*.msi "dist/zode-windows-$v-x64.msi"
+          Copy-Item shells/windows/artifacts/release/*.zip "dist/zode-windows-$v-x64.zip"
+          Copy-Item shells/windows/artifacts/release/Zode.Shell.exe "dist/zode-windows-$v-x64.exe"
+          Get-ChildItem dist | Format-Table Name, Length
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: zode-windows
+          path: dist/*
+          if-no-files-found: error
+
+  # ---------------------------------------------------------------------------
+  # macOS — a .dmg, signed, notarised and stapled.
+  # ---------------------------------------------------------------------------
+  macos:
+    name: macOS (.dmg, notarised)
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Read the version
+        id: ver
+        run: echo "version=$(cat VERSION | tr -d '[:space:]')" >> "$GITHUB_OUTPUT"
+
+      # ---- what secrets do we have? --------------------------------------
+      # Notarisation needs a Developer ID Application certificate and an
+      # Apple id with an app-specific password.  Without them the disk image
+      # is still produced, but it is not notarised and macOS will move a
+      # downloaded copy to the Trash.
+      - name: Detect the Apple credentials
+        id: apple
+        env:
+          CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+        run: |
+          if [ -n "$CERTIFICATE" ]; then
+            echo "cert=yes"   >> "$GITHUB_OUTPUT"
+          else
+            echo "cert=no"    >> "$GITHUB_OUTPUT"
+          fi
+          if [ -n "$APPLE_ID" ]; then
+            echo "notary=yes" >> "$GITHUB_OUTPUT"
+          else
+            echo "notary=no"  >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Import the Developer ID certificate
+        if: steps.apple.outputs.cert == 'yes'
+        env:
+          CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
+          PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+        run: |
+          # macOS's base64 is the BSD one and does not take --decode, so use
+          # openssl, which is on every runner.
+          printf '%s' "$CERTIFICATE" | openssl base64 -d > "$RUNNER_TEMP/zode.p12"
+          security create-keychain -p zode build.keychain
+          security default-keychain -s build.keychain
+          security list-keychains -d user -s build.keychain login.keychain-db
+          security unlock-keychain -p zode build.keychain
+          security import "$RUNNER_TEMP/zode.p12" -k build.keychain \
+            -P "$PASSWORD" -T /usr/bin/codesign
+          # Without this the key stays locked and codesign cannot use it.
+          security set-key-partition-list -S apple-tool:,apple:,codesign: \
+            -s -k zode build.keychain
+          rm -f "$RUNNER_TEMP/zode.p12"
+          security find-identity -v -p codesigning
+
+      - name: Store the notarisation credentials
+        if: steps.apple.outputs.notary == 'yes'
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          xcrun notarytool store-credentials "zode-notary" \
+            --apple-id "$APPLE_ID" \
+            --team-id "$APPLE_TEAM_ID" \
+            --password "$APPLE_APP_SPECIFIC_PASSWORD"
+
+      - name: Build, sign and notarise the disk image
+        env:
+          ZODE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          ZODE_APP_VERSION: ${{ steps.ver.outputs.version }}
+          ZODE_KEYCHAIN_PROFILE: ${{ steps.apple.outputs.notary == 'yes' && 'zode-notary' || '' }}
+        run: |
+          chmod +x shells/macos/build-dmg.sh
+          shells/macos/build-dmg.sh
+
+      - name: Collect the disk image
+        run: |
+          mkdir -p dist
+          cp shells/macos/build/Zode.dmg \
+             "dist/zode-macos-${{ steps.ver.outputs.version }}-universal.dmg"
+          ls -la dist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: zode-macos
+          path: dist/*.dmg
+          if-no-files-found: error
+
+  # ---------------------------------------------------------------------------
+  # Cut the release and attach everything.
+  # ---------------------------------------------------------------------------
+  release:
+    name: Cut the release
+    needs: [android, windows, macos]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download the artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Read the version
+        id: ver
+        run: echo "version=$(cat VERSION | tr -d '[:space:]')" >> "$GITHUB_OUTPUT"
+
+      - name: Write the release notes
+        run: |
+          VERSION="${{ steps.ver.outputs.version }}"
+          TAG="v${VERSION}-dev.${GITHUB_RUN_NUMBER}"
+          {
+            echo "## Zode ${VERSION} — development build"
+            echo
+            echo "Debug builds cut from \`main\` at \`${GITHUB_SHA}\`."
+            echo
+            echo "### Downloads"
+            echo
+            echo "| Platform | File |"
+            echo "|---|---|"
+            echo "| macOS | \`zode-macos-${VERSION}-universal.dmg\` |"
+            echo "| Windows | \`zode-windows-${VERSION}-x64.msi\` |"
+            echo "| Windows | \`zode-windows-${VERSION}-x64.zip\` (portable) |"
+            echo "| Windows | \`zode-windows-${VERSION}-x64.exe\` (needs the \`web/\` folder beside it) |"
+            echo "| Android | \`zode-android-${VERSION}-debug.apk\` |"
+            echo
+            echo "### Installing on macOS"
+            echo
+            echo "The disk image is signed, notarised and stapled, so it opens without a"
+            echo "Gatekeeper warning. If your copy still warns, right-click the app inside"
+            echo "the disk image and choose **Open** once."
+            echo
+            echo "### Installing on Windows"
+            echo
+            echo "The \`.msi\` installs per-user — no administrator rights needed — and puts a"
+            echo "Zode shortcut in the Start menu. The \`.zip\` is the portable build; unzip it"
+            echo "and run \`Zode.Shell.exe\`."
+            echo
+            echo "### What changed"
+            echo
+            git log --pretty=format:'- %s' "${GITHUB_SHA}~20..${GITHUB_SHA}" 2>/dev/null || echo "- (no history available)"
+            echo
+          } > NOTES.md
+          cat NOTES.md
+
+      - name: Create the release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: v${{ steps.ver.outputs.version }}-dev.${{ github.run_number }}
+        run: |
+          set -euo pipefail
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            # A re-run of the same workflow: replace the assets in place.
+            gh release upload "$TAG" artifacts/* --clobber
+            gh release edit "$TAG" --notes-file NOTES.md --title "Zode $TAG"
+          else
+            gh release create "$TAG" \
+              artifacts/* \
+              --title "Zode $TAG" \
+              --notes-file NOTES.md \
+              --target "$GITHUB_SHA" \
+              --prerelease
+          fi
+          echo "release: $TAG"

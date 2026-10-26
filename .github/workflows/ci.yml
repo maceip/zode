@@ -83,6 +83,9 @@ jobs:
       - name: The library is the same library on every platform
         run: python3 scripts/export_library.py --check
 
+      - name: The release tooling is wired together
+        run: python3 scripts/verify_release.py
+
   # ---------------------------------------------------------------------------
   # Icons must be reproducible: regenerating them must not change the tree.
   # ---------------------------------------------------------------------------

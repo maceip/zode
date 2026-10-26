@@ -4,6 +4,7 @@
 // that it has total control over the window chrome (contract §5).
 
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace Zode.Shell.Native;
 
@@ -198,7 +199,7 @@ internal static class NativeMethods
     public static extern bool EnumChildWindows(IntPtr hWndParent, EnumWindowsProc lpEnumFunc, IntPtr lParam);
 
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
-    public static extern int GetClassNameW(IntPtr hWnd, char[] lpClassName, int nMaxCount);
+    public static extern int GetClassNameW(IntPtr hWnd, StringBuilder lpClassName, int nMaxCount);
 
     // ------------------------------------------------------------------
     // Message loop

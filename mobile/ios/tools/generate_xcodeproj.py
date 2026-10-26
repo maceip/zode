@@ -46,6 +46,13 @@ COMPATIBILITY_VERSION = "Xcode 15.0"
 # Resources that are not part of the source tree walk.
 EXTRA_RESOURCES = ["haptics.json", "library.json"]
 
+# The folder inside the bundle that holds the web application.  It has to be
+# a *folder reference*: Xcode copies a folder reference as a directory, while
+# the files inside it would each be copied to the root of the bundle — and
+# the web app carries its own assets/haptics.json and assets/library.json,
+# which would then collide with the ones the app bundles next to them.
+WEB_FOLDER = "web"
+
 # The Info.plist is referenced by build settings, never copied as a resource.
 INFO_PLIST = "ZodeMobile/Resources/Info.plist"
 
@@ -100,11 +107,15 @@ def collect_files() -> Tuple[List[FileNode], List[FileNode], List[FileNode]]:
     others: List[FileNode] = []
 
     for path in sorted(SOURCE_DIR.rglob("*")):
-        if not path.is_file():
+        if path.is_dir():
             continue
         relative = path.relative_to(IOS_DIR).as_posix()
         if ".xcassets/" in relative + "/":
             # The asset catalog is referenced as a whole.
+            continue
+        if WEB_FOLDER + "/" in relative:
+            # The bundled web application is a folder reference; its files
+            # are copied as a directory, not flattened into the bundle root.
             continue
         if path.suffix == ".swift":
             sources.append(FileNode(path, relative))
@@ -114,6 +125,12 @@ def collect_files() -> Tuple[List[FileNode], List[FileNode], List[FileNode]]:
             resources.append(FileNode(path, relative))
         else:
             others.append(FileNode(path, relative))
+
+    # The web application is referenced as a folder, so Xcode copies the
+    # whole directory into the bundle.
+    web_folder = SOURCE_DIR / "Resources" / WEB_FOLDER
+    if web_folder.is_dir():
+        resources.append(FileNode(web_folder, web_folder.relative_to(IOS_DIR).as_posix()))
 
     # Make sure the shared files are always bundled, even if they have not
     # been copied into the source tree yet.
@@ -179,6 +196,10 @@ def build_groups(
 
 
 def file_type(node: FileNode) -> str:
+    if node.path.is_dir():
+        # A folder reference: Xcode copies the whole directory into the
+        # bundle instead of flattening its files into the bundle root.
+        return "folder"
     suffix = node.path.suffix.lower()
     if suffix == ".swift":
         return "sourcecode.swift"

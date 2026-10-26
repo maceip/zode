@@ -19,6 +19,7 @@ internal static class WindowConstants
     public const uint WM_DESTROY = 0x0002;
     public const uint WM_CLOSE = 0x0010;
     public const uint WM_QUIT = 0x0012;
+    public const uint WM_ERASEBKGND = 0x0014;
     public const uint WM_SIZE = 0x0005;
     public const uint WM_SIZING = 0x0214;
     public const uint WM_MOVE = 0x0003;

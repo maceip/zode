@@ -32,6 +32,7 @@
 		F45DB3350FAECD5072438D38 /* SearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE648F46A210ED90C81C4024 /* SearchView.swift */; };
 		34D16EE6B603F43570EFA69A /* haptics.json in Resources */ = {isa = PBXBuildFile; fileRef = DE2D39C4A80B47DDCDD7A2C4 /* haptics.json */; };
 		D4B7835AF6FAD3A794792476 /* library.json in Resources */ = {isa = PBXBuildFile; fileRef = 3F90ACB2D7CC814F90D341CF /* library.json */; };
+		BF0439549FC1A137DB80FC36 /* web in Resources */ = {isa = PBXBuildFile; fileRef = E4DDB9EB62C796896A0463F1 /* web */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -56,6 +57,7 @@
 		14AE8DFDC6201D3C63DC537E /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		DE2D39C4A80B47DDCDD7A2C4 /* haptics.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = haptics.json; sourceTree = "<group>"; };
 		3F90ACB2D7CC814F90D341CF /* library.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = library.json; sourceTree = "<group>"; };
+		E4DDB9EB62C796896A0463F1 /* web */ = {isa = PBXFileReference; lastKnownFileType = folder; path = web; sourceTree = "<group>"; };
 		DA0B32CDE7B214065E4B2AEB /* AgentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentView.swift; sourceTree = "<group>"; };
 		CE7FC7A4406C418EB49640C7 /* CollectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectionView.swift; sourceTree = "<group>"; };
 		73F7A01578EC308C52AE916D /* LibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryView.swift; sourceTree = "<group>"; };
@@ -155,6 +157,7 @@
 				14AE8DFDC6201D3C63DC537E /* Info.plist */,
 				DE2D39C4A80B47DDCDD7A2C4 /* haptics.json */,
 				3F90ACB2D7CC814F90D341CF /* library.json */,
+				E4DDB9EB62C796896A0463F1 /* web */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -240,6 +243,7 @@
 			files = (
 				34D16EE6B603F43570EFA69A /* haptics.json in Resources */,
 				D4B7835AF6FAD3A794792476 /* library.json in Resources */,
+				BF0439549FC1A137DB80FC36 /* web in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

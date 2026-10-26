@@ -6,6 +6,7 @@
 // window with WM_APP_DISPATCH, which the shell's WndProc drains.
 
 using System.Collections.Concurrent;
+using Zode.Shell.Diagnostics;
 
 namespace Zode.Shell.Native;
 

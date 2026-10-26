@@ -134,8 +134,9 @@ internal sealed class WaveOutPlayer : IDisposable
         IsPlaying = false;
 
         // Clear WHDR_LOOP so the driver stops repeating the buffer ...
-        int flags = Marshal.ReadInt32(_header, WinMm.HeaderOffsetFlags);
-        Marshal.WriteInt32(_header, WinMm.HeaderOffsetFlags, flags & ~WinMm.WHDR_LOOP);
+        uint flags = unchecked((uint)Marshal.ReadInt32(_header, WinMm.HeaderOffsetFlags));
+        Marshal.WriteInt32(_header, WinMm.HeaderOffsetFlags,
+            unchecked((int)(flags & ~WinMm.WHDR_LOOP)));
 
         // ... and reset the device, which marks the header as done.
         WinMm.waveOutReset(_waveOut);
@@ -193,7 +194,10 @@ internal sealed class WaveOutPlayer : IDisposable
         }
     }
 
-    private void SetFlags(int flags) => Marshal.WriteInt32(_header, WinMm.HeaderOffsetFlags, flags);
+    // The WAVEHDR flags are a DWORD, so they are handled as uint all the way
+    // through: mixing an int and a uint here is what the compiler rejects.
+    private void SetFlags(uint flags) =>
+        Marshal.WriteInt32(_header, WinMm.HeaderOffsetFlags, unchecked((int)flags));
 
     private void Cleanup()
     {

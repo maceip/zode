@@ -6,11 +6,16 @@
 // devices which do have a rumble motor (some tablets, Surface devices) react
 // to the same programs as the synthesised audio waveform.
 //
-// Only the *public* Windows.Devices.Haptics API is used: the `VibrationDevice`
-// class, its `SimpleHapticsController` and the `FeedbackKind` enum.  The
-// `IVibrationDevice` / `IVibrationSimpleHapticsController` interfaces and the
-// `HapticFeedback` struct are internal to the platform and cannot be
+// Only the *public* Windows.Devices.Haptics API is used: the
+// `VibrationDevice` class and its `SimpleHapticsController`.  The
+// `IVibrationDevice` / `IVibrationSimpleHapticsController` interfaces and
+// the `HapticFeedback` struct are internal to the platform and cannot be
 // referenced from an app.
+//
+// The waveform itself is not constructed either: `SimpleHapticsControllerFeedback`
+// has no public constructor, because a device only plays the waveforms it
+// says it supports.  The waveform is therefore picked out of the controller's
+// own `SupportedFeedback` list.
 
 using Windows.Devices.Haptics;
 using Zode.Shell.Diagnostics;
@@ -77,16 +82,47 @@ internal sealed class VibrationService
         try
         {
             double intensity = Math.Clamp(peakIntensity, 0, 1);
+            TimeSpan duration = TimeSpan.FromMilliseconds(Math.Clamp(durationMs, 10, 2000));
 
-            // The coarse API is a waveform, not a duration: the platform
-            // decides how long the pulse lasts.  The duration of the program
-            // is therefore not reproduced exactly — the contract allows that
-            // on platforms without a rich haptic engine.
-            controller.SendHapticFeedback(FeedbackKind.Click, intensity, 0.5);
+            // A device only plays the waveforms it says it supports, so the
+            // waveform is picked out of that list rather than constructed.
+            foreach (var waveform in controller.SupportedFeedback)
+            {
+                if (waveform.Waveform != KnownSimpleHapticsControllerWaveforms.Click)
+                {
+                    continue;
+                }
+
+                Send(controller, waveform, intensity, duration);
+                return;
+            }
+
+            // No click waveform: any supported waveform is better than none.
+            foreach (var waveform in controller.SupportedFeedback)
+            {
+                Send(controller, waveform, intensity, duration);
+                return;
+            }
         }
         catch (Exception ex)
         {
             Log.Warn("haptics", $"vibration pulse failed: {ex.Message}");
+        }
+    }
+
+    private static void Send(
+        SimpleHapticsController controller,
+        SimpleHapticsControllerFeedback waveform,
+        double intensity,
+        TimeSpan duration)
+    {
+        if (controller.IsPlayDurationSupported)
+        {
+            controller.SendHapticFeedbackForDuration(waveform, intensity, duration);
+        }
+        else
+        {
+            controller.SendHapticFeedback(waveform, intensity);
         }
     }
 
@@ -95,7 +131,7 @@ internal sealed class VibrationService
     {
         try
         {
-            _controller?.StopHapticFeedback();
+            _controller?.StopFeedback();
         }
         catch (Exception ex)
         {

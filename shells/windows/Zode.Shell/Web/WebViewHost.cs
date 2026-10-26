@@ -58,10 +58,18 @@ internal sealed class WebViewHost : IBridgeEventSink, IDisposable
                 "Zode", "WebView2");
             Directory.CreateDirectory(userDataFolder);
 
+            CoreWebView2EnvironmentOptions options = new CoreWebView2EnvironmentOptions
+            {
+                // AdditionalBrowserArguments lives on the *environment*
+                // options, not on CoreWebView2Settings.
+                AdditionalBrowserArguments =
+                    "--enable-features=msWebView2AutoDetectThemeEnabled",
+            };
+
             CoreWebView2Environment environment = await CoreWebView2Environment.CreateAsync(
                 browserExecutableFolder: null,
                 userDataFolder: userDataFolder,
-                options: null);
+                options: options);
 
             CoreWebView2Controller controller =
                 await environment.CreateCoreWebView2ControllerAsync(_parentWindow);
@@ -89,8 +97,6 @@ internal sealed class WebViewHost : IBridgeEventSink, IDisposable
         core.Settings.AreDefaultContextMenusEnabled = true;
         core.Settings.AreDevToolsEnabled = IsDebugBuild;
         core.Settings.IsZoomControlEnabled = true;
-        core.Settings.AdditionalBrowserArguments =
-            "--enable-features=msWebView2AutoDetectThemeEnabled";
 
         // The shell paints no background (contract §5.2): the WebView2
         // backdrop is the Zode ink colour so that there is no white flash
@@ -136,7 +142,12 @@ internal sealed class WebViewHost : IBridgeEventSink, IDisposable
         {
             // We handle external drops ourselves so that a file dropped
             // anywhere on the window becomes an "attachment" event.
-            core.AllowExternalDrop = false;
+            // AllowExternalDrop lives on the *controller*, not on the
+            // CoreWebView2 itself.
+            if (_controller is not null)
+            {
+                _controller.AllowExternalDrop = false;
+            }
         }
         catch (Exception ex)
         {

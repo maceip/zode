@@ -100,7 +100,7 @@ internal static class AppIdentity
             try
             {
                 var persist = (IPersistFile)Marshal.GetObjectForIUnknown(persistRaw);
-                persist.Save(shortcutPath, true);
+                persist.Save(shortcutPath, 1);
             }
             finally
             {
@@ -137,7 +137,7 @@ internal static class AppIdentity
         try
         {
             byte[] guidBytes = ComIds.PKEY_AppUserModelId.ToByteArray();
-            Marshal.Copy(guidBytes, 0, key, 0, 16);
+            Marshal.Copy(guidBytes, 0, key, 16);
             Marshal.WriteInt32(key, 16, 5); // pid of System.AppUserModel.ID
 
             for (int i = 0; i < 24; i++)

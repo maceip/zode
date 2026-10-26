@@ -155,6 +155,15 @@ check_csharp_parses() {
 }
 
 # ---------------------------------------------------------------------------
+# The Windows shell really compiles.  `EnableWindowsTargeting` means this
+# works on Linux as well, so a Win32 compile error is caught in seconds
+# instead of waiting for the Windows runner.
+# ---------------------------------------------------------------------------
+check_windows_build() {
+  bash scripts/check_windows_build.sh
+}
+
+# ---------------------------------------------------------------------------
 # Every Swift file on disk must be in the Xcode project's Sources phase,
 # otherwise its types are "cannot find type in scope" at build time.
 # ---------------------------------------------------------------------------
@@ -194,6 +203,7 @@ run "security: no committed credentials" check_no_secrets
 run "release: workflow + installer"      check_release_tooling
 run "swift: every source parses"         check_swift_parses
 run "csharp: every source parses"        check_csharp_parses
+run "windows: the shell compiles"       check_windows_build
 run "xcode: every source is compiled"    check_project_sources
 
 if [[ -f shells/macos/tools/validate_pbxproj.py ]]; then

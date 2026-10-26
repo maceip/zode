@@ -66,6 +66,21 @@ struct ZodeLibraryEntityQuery: EntityQuery {
 @available(macOS 14.0, *)
 struct ZodeLibraryEntityStringQuery: EntityStringQuery {
 
+    // EntityStringQuery inherits from EntityQuery, so the lookup by
+    // identifier is required as well as the search by string.  Without it the
+    // type does not conform to EntityQuery (or to DynamicOptionsProvider,
+    // whose result type is inferred from it).
+    func entities(for identifiers: [ZodeLibraryEntity.ID]) async throws -> [ZodeLibraryEntity] {
+        let wanted = Set(identifiers)
+        return ZodeIntentsBridge.libraryProvider?()
+            .map { ZodeLibraryEntity(item: $0) }
+            .filter { wanted.contains($0.id) } ?? []
+    }
+
+    func suggestedEntities() async throws -> [ZodeLibraryEntity] {
+        (ZodeIntentsBridge.libraryProvider?() ?? []).map { ZodeLibraryEntity(item: $0) }
+    }
+
     func entities(matching string: String) async throws -> [ZodeLibraryEntity] {
         let needle = string.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         let items = ZodeIntentsBridge.libraryProvider?() ?? []

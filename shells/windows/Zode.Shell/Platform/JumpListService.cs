@@ -143,7 +143,7 @@ internal sealed class JumpListService
         IntPtr text = IntPtr.Zero;
         try
         {
-            Marshal.Copy(ComIds.PKEY_AppUserModelId.ToByteArray(), 0, key, 0, 16);
+            Marshal.Copy(ComIds.PKEY_AppUserModelId.ToByteArray(), 0, key, 16);
             Marshal.WriteInt32(key, 16, 5);
 
             for (int i = 0; i < 24; i++)

@@ -80,7 +80,7 @@ else
     --source=. \
     --remote=origin \
     --push \
-    --description "Zune-era agent app — native macOS/Windows shells, a Metro web app, and iOS + Android clients"
+    --description "Code content before chrome — native macOS/Windows shells, a Metro web app, and iOS + Android clients"
 fi
 
 echo

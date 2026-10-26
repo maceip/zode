@@ -204,20 +204,47 @@ def _font(size, bold=False):
 
 
 def make_social_preview():
-    """GitHub social preview: 1280x640, the icon on the left, wordmark on the right."""
+    """GitHub social preview: 1280x640, the icon on the left, wordmark on the right.
+
+    The banner is painted on the app's own warm-paper canvas. The icon's dark
+    tile is #212121, which is invisible against a near-black ground, so the
+    ground has to sit *above* it in value for the tile to read at all. Paper
+    does that, and it lets the orange keep its punch instead of fighting a
+    mid-tone brown.
+    """
     W, H = 1280, 640
-    img = Image.new("RGB", (W, H), (20, 20, 20))
+
+    # --- the ground: a soft warm gradient, paper -> paper-2 ----------------
+    ground = Image.new("RGB", (W, H), (247, 245, 242))
+    grad = Image.new("L", (1, H))
+    for y in range(H):
+        t = y / (H - 1)
+        grad.putpixel((0, y), int(255 * (0.45 + 0.55 * t)))
+    ground = Image.composite(
+        Image.new("RGB", (W, H), (233, 229, 223)), ground, grad.resize((W, H))
+    )
+    img = ground
     d = ImageDraw.Draw(img)
 
-    # Subtle Metro-ish orange band down the left edge.
-    d.rectangle((0, 0, 14, H), fill=(245, 86, 41))
-
+    # --- the artwork, lifted off the ground with a soft shadow --------------
     art = Image.open(SRC).convert("RGBA").resize((360, 360), Image.LANCZOS)
-    img.paste(art, (96, 140), art)
+    ax, ay = 96, 140
 
-    d.text((520, 236), "zode", font=_font(108, bold=True), fill=(247, 245, 242))
-    d.text((524, 360), "zune-era agent app", font=_font(34), fill=(154, 150, 143))
-    d.text((524, 412), "macOS  ·  Windows  ·  iOS  ·  Android", font=_font(26), fill=(245, 86, 41))
+    shadow = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    silhouette = Image.new("RGBA", art.size, (96, 82, 70, 120))
+    # The shadow takes the artwork's own alpha, so the transparent corners of
+    # the mark stay transparent and the shadow reads as the mark, not a box.
+    shadow.paste(silhouette, (ax + 8, ay + 16), art)
+    shadow = shadow.filter(ImageFilter.GaussianBlur(18))
+    img = Image.alpha_composite(img.convert("RGBA"), shadow).convert("RGB")
+    d = ImageDraw.Draw(img)
+
+    img.paste(art, (ax, ay), art)
+
+    # --- the wordmark ------------------------------------------------------
+    d.text((520, 236), "zode", font=_font(108, bold=True), fill=(20, 20, 20))
+    d.text((524, 360), "code content before chrome", font=_font(34), fill=(106, 102, 96))
+    d.text((524, 412), "macOS  ·  Windows  ·  iOS  ·  Android", font=_font(26), fill=(216, 60, 14))
 
     img.save(os.path.join(HERE, "social-preview.png"))
     print("social preview written")

@@ -4,7 +4,7 @@
 
 # zode
 
-**A Zune-era agent app — native shells, a Metro web app, and mobile clients.**
+**Code content before chrome — native shells, a Metro web app, and mobile clients.**
 
 One product, five surfaces, one contract.
 

@@ -80,3 +80,9 @@ venv/
 mobile/android/local.properties
 mobile/android/.kotlin/
 mobile/android/.cxx/
+
+# ---- the Mac build report ---------------------------------------------------
+build-on-mac.log
+build-on-mac.xcodebuild.log
+build-on-mac.ios.log
+.build-on-mac/

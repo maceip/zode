@@ -58,16 +58,23 @@ done
 log "Zode macOS shell — $CONFIGURATION build"
 
 if ! command -v xcodebuild >/dev/null 2>&1; then
-    die "xcodebuild was not found — this script needs Xcode (and its command line tools)."
+    if [ "${STAGE_ONLY}" = "yes" ]; then
+        # Staging only needs python3 and the web app — not a compiler.
+        info "xcodebuild was not found; staging only, so that is fine"
+    else
+        die "xcodebuild was not found — this script needs Xcode (and its command line tools)."
+    fi
 fi
 
-info "xcodebuild    : $(xcodebuild -version | head -1 | sed 's/^Xcode //')"
+if command -v xcodebuild >/dev/null 2>&1; then
+    info "xcodebuild    : $(xcodebuild -version | head -1 | sed 's/^Xcode //')"
+fi
 info "project       : ${PROJECT}"
 info "team id       : ${TEAM_ID:-<not set>}"
 info "identity      : ${SIGN_IDENTITY:-<from the keychain>}"
 info "export method : ${EXPORT_METHOD}"
 
-if [ "${UNSIGNED}" = "no" ] && [ -z "${TEAM_ID}" ]; then
+if [ "${UNSIGNED}" = "no" ] && [ "${STAGE_ONLY}" = "no" ] && [ -z "${TEAM_ID}" ]; then
     cat >&2 <<'EOF'
 
 error: no signing team.

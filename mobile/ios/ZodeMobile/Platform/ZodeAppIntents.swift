@@ -4,7 +4,7 @@
 //
 //  App Intents + Media Intents (contract §4.1).
 //
-//  Every intent carries the canonical contract name in `contractIntentName`
+//  Every intent carries the canonical contract name in `Self.contractIntentName`
 //  so the mapping is obvious:
 //
 //      zode.search          -> SearchLibraryIntent
@@ -152,7 +152,7 @@ public struct SearchLibraryIntent: AppIntent {
 
     public func perform() async throws -> some AppIntents.IntentResult & ProvidesDialog {
         await IntentBridge.shared.perform(
-            contractIntentName,
+            Self.contractIntentName,
             payload: ["query": query]
         )
         return .result(dialog: "Searching Zode for \(query)")
@@ -181,7 +181,7 @@ public struct PlayItemIntent: AppIntent {
 
     public func perform() async throws -> some AppIntents.IntentResult & ProvidesDialog {
         await IntentBridge.shared.perform(
-            contractIntentName,
+            Self.contractIntentName,
             payload: ["id": item.id, "kind": item.kind]
         )
         return .result(dialog: "Playing \(item.title)")
@@ -202,7 +202,7 @@ public struct PausePlaybackIntent: AudioPlaybackIntent {
     public init() {}
 
     public func perform() async throws -> some AppIntents.IntentResult {
-        await IntentBridge.shared.perform(contractIntentName)
+        await IntentBridge.shared.perform(Self.contractIntentName)
         return .result()
     }
 }
@@ -219,7 +219,7 @@ public struct NextTrackIntent: AudioPlaybackIntent {
     public init() {}
 
     public func perform() async throws -> some AppIntents.IntentResult {
-        await IntentBridge.shared.perform(contractIntentName)
+        await IntentBridge.shared.perform(Self.contractIntentName)
         return .result()
     }
 }
@@ -236,7 +236,7 @@ public struct PreviousTrackIntent: AudioPlaybackIntent {
     public init() {}
 
     public func perform() async throws -> some AppIntents.IntentResult {
-        await IntentBridge.shared.perform(contractIntentName)
+        await IntentBridge.shared.perform(Self.contractIntentName)
         return .result()
     }
 }
@@ -263,7 +263,7 @@ public struct NewTaskIntent: AppIntent {
 
     public func perform() async throws -> some AppIntents.IntentResult & ProvidesDialog {
         await IntentBridge.shared.perform(
-            contractIntentName,
+            Self.contractIntentName,
             payload: ["prompt": prompt]
         )
         return .result(dialog: "Starting a new agent task")
@@ -284,7 +284,7 @@ public struct StopTaskIntent: AppIntent {
     public init() {}
 
     public func perform() async throws -> some AppIntents.IntentResult {
-        await IntentBridge.shared.perform(contractIntentName)
+        await IntentBridge.shared.perform(Self.contractIntentName)
         return .result()
     }
 }
@@ -337,7 +337,7 @@ public struct ShowViewIntent: AppIntent {
         case .agent: raw = "agent"
         }
         await IntentBridge.shared.perform(
-            contractIntentName,
+            Self.contractIntentName,
             payload: ["view": raw]
         )
         return .result(dialog: "Opening Zode")

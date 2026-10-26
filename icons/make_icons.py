@@ -187,8 +187,21 @@ def make_android():
 
 
 def _font(size, bold=False):
-    """Prefer a real UI font; fall back to PIL's bitmap default."""
+    """The UI font, preferring the copy that is vendored with the repository.
+
+    The font has to be pinned, not merely "some sans serif": the social
+    preview is a PNG, and two different rasterisers draw the same text into
+    different bytes.  A build machine without Liberation falls back to
+    DejaVu, and the preview then differs by a few bytes from the committed
+    one — which is exactly what the reproducibility check in CI is there to
+    catch.  The vendored copy makes the output identical everywhere.
+    """
+    vendored = os.path.join(HERE, "fonts")
     cands = []
+    if bold:
+        cands += [os.path.join(vendored, "LiberationSans-Bold.ttf")]
+    cands += [os.path.join(vendored, "LiberationSans-Regular.ttf")]
+    # The system copies, in case the vendored ones are ever removed.
     if bold:
         cands += ["/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
                   "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"]

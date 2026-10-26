@@ -20,7 +20,9 @@ enum ZodeIntentsBridge {
 
     /// Runs the library search.
     static func search(_ query: String) -> [ZodeLibraryItem] {
-        libraryProvider?().filter { item in
+        // `libraryProvider?()` is an optional, so the array has to be
+        // unwrapped before it can be filtered.
+        (libraryProvider?() ?? []).filter { item in
             let needle = query.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
             guard !needle.isEmpty else { return true }
             if item.title.lowercased().contains(needle) { return true }

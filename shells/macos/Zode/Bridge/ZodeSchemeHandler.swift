@@ -92,7 +92,14 @@ final class ZodeSchemeHandler: NSObject, WKURLSchemeHandler {
             httpVersion: "HTTP/1.1",
             headerFields: headers
         )
-        task.didReceive(response)
+        // The initialiser is failable, and a URL without a scheme would
+        // fail it — but this is the app's own scheme handler, so the URL is
+        // always well formed.
+        guard let httpResponse = response else {
+            task.didFailWithError(URLError(.badURL))
+            return
+        }
+        task.didReceive(httpResponse)
         task.didReceive(body)
         task.didFinish()
     }

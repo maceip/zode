@@ -57,7 +57,10 @@ final class ZodeWebView: WKWebView {
     private static func makeConfiguration(bridge: ZodeBridge) -> WKWebViewConfiguration {
         let configuration = WKWebViewConfiguration()
         configuration.websiteDataStore = .default()
-        configuration.allowsInlineMediaPlayback = true
+        // On macOS there is no `allowsInlineMediaPlayback` — that one is
+        // iOS only.  Here the equivalent is the list of media types that
+        // need the user to start them, and an empty list means "play
+        // straight away".
         configuration.mediaTypesRequiringUserActionForPlayback = []
         configuration.suppressesIncrementalRendering = false
         configuration.preferences.javaScriptCanOpenWindowsAutomatically = true

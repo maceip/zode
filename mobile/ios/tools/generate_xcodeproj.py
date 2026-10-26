@@ -216,6 +216,20 @@ def file_type(node: FileNode) -> str:
     return "text"
 
 
+def setting_value(value: object) -> str:
+    """Render a build setting value.
+
+    A list is a real property list array.  It has to be: a list written as a
+    quoted string is read back as one string, and the build system then splits
+    it on the commas, so `("DEBUG=1", "$(inherited)")` turns into three
+    broken preprocessor definitions called `(`, `,` and `)`.
+    """
+    if isinstance(value, (list, tuple)):
+        items = "\n".join("\t\t\t\t\t%s," % escape(str(item)) for item in value)
+        return "(\n%s\n\t\t\t\t)" % items
+    return escape(str(value))
+
+
 def escape(value: str) -> str:
     """Quote a value when the OpenStep plist format needs it.
 
@@ -493,7 +507,7 @@ def write_pbxproj(
         ("DEBUG_INFORMATION_FORMAT", "dwarf"),
         ("ENABLE_TESTABILITY", "YES"),
         ("GCC_OPTIMIZATION_LEVEL", "0"),
-        ("GCC_PREPROCESSOR_DEFINITIONS", "(\n\t\t\t\t\t\"DEBUG=1\",\n\t\t\t\t\t\"$(inherited)\",\n\t\t\t\t)"),
+        ("GCC_PREPROCESSOR_DEFINITIONS", ["DEBUG=1", "$(inherited)"]),
         ("MTL_ENABLE_DEBUG_INFO", "INCLUDE_SOURCE"),
         ("ONLY_ACTIVE_ARCH", "YES"),
         ("SWIFT_ACTIVE_COMPILATION_CONDITIONS", "DEBUG"),
@@ -518,7 +532,7 @@ def write_pbxproj(
         ("GENERATE_INFOPLIST_FILE", "NO"),
         ("INFOPLIST_FILE", INFO_PLIST),
         ("IPHONEOS_DEPLOYMENT_TARGET", DEPLOYMENT_TARGET),
-        ("LD_RUNPATH_SEARCH_PATHS", "(\n\t\t\t\t\t\"$(inherited)\",\n\t\t\t\t\t\"@executable_path/Frameworks\",\n\t\t\t\t)"),
+        ("LD_RUNPATH_SEARCH_PATHS", ["$(inherited)", "@executable_path/Frameworks"]),
         ("MARKETING_VERSION", "1.0"),
         ("PRODUCT_BUNDLE_IDENTIFIER", BUNDLE_ID),
         ("PRODUCT_NAME", "\"$(TARGET_NAME)\""),
@@ -535,7 +549,7 @@ def write_pbxproj(
         out.append("\t\t\tisa = XCBuildConfiguration;")
         out.append("\t\t\tbuildSettings = {")
         for key, value in settings:
-            out.append("\t\t\t\t%s = %s;" % (key, escape(value)))
+            out.append("\t\t\t\t%s = %s;" % (key, setting_value(value)))
         out.append("\t\t\t};")
         out.append("\t\t\tname = %s;" % name)
         out.append("\t\t};")

@@ -1,0 +1,79 @@
+# ---- build output ----------------------------------------------------------
+apps/web/.cache/
+apps/web/node_modules/
+apps/web/dist/
+mobile/android/.gradle/
+mobile/android/build/
+mobile/android/app/build/
+mobile/android/local.properties
+mobile/android/.idea/
+shells/windows/**/bin/
+shells/windows/**/obj/
+shells/windows/**/publish/
+shells/macos/build/
+shells/macos/DerivedData/
+shells/macos/**/*.xcworkspace/
+shells/macos/**/*.xcuserdatad/
+shells/macos/Zode/Resources/web/
+mobile/ios/**/*.xcuserdatad/
+mobile/ios/DerivedData/
+mobile/ios/ZodeMobile/Resources/web/
+
+# ---- Xcode ----------------------------------------------------------------
+*.xcuserstate
+xcuserdata/
+*.xcscmblueprint
+*.xccheckout
+*.moved-aside
+DerivedData/
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# ---- Windows ---------------------------------------------------------------
+*.user
+*.suo
+*.aps
+*.pdb
+*.ilk
+*.exe
+*.dll
+*.cache
+*.vsix
+
+# ---- Android ---------------------------------------------------------------
+*.iml
+.cxx/
+release/
+
+# ---- macOS -----------------------------------------------------------------
+.DS_Store
+._*
+
+# ---- tooling ---------------------------------------------------------------
+.mavis/
+node_modules/
+*.log
+npm-debug.log*
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+
+# ---- secrets — never commit -----------------------------------------------
+*.p12
+*.pfx
+*.keystore
+*.jks
+*.mobileprovision
+*.cer
+.env
+.env.*
+!.env.example
+
+# ---- Android local state ---------------------------------------------------
+mobile/android/local.properties
+mobile/android/.kotlin/
+mobile/android/.cxx/

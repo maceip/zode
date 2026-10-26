@@ -1,0 +1,222 @@
+/* =============================================================================
+   Zode web app — shell, drag strip and Metro rail.
+   The design tokens come from assets/tokens.css (a verbatim copy of
+   packages/shared/tokens.css).
+   ============================================================================= */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: var(--zode-ink);
+  color: var(--zode-text-invert);
+  font-family: var(--font-ui);
+  font-size: var(--type-body);
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+
+body {
+  overscroll-behavior: none;
+}
+
+#zode-root {
+  height: 100%;
+}
+
+.zode-app {
+  height: 100%;
+  background: var(--zode-ink);
+  color: var(--zode-text-invert);
+}
+
+.zode-shell {
+  display: flex;
+  height: 100%;
+  /* the drag strip is fixed at the top of the document */
+  padding-top: var(--drag-zone-height, 34px);
+}
+
+/* ---- drag strip ---------------------------------------------------------- */
+
+.zode-drag-zone {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0 var(--gutter);
+  background: var(--zode-ink-2);
+  border-bottom: 1px solid var(--zode-ink-4);
+  /* the strip must never start a text selection */
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: default;
+  font-size: var(--type-micro);
+  color: var(--zode-text-invert-muted);
+}
+
+.zode-drag-brand {
+  display: flex;
+  align-items: baseline;
+  gap: 1px;
+}
+
+.zode-drag-mark {
+  color: var(--zode-orange);
+  font-size: var(--type-label);
+  line-height: 1;
+}
+
+.zode-drag-word {
+  font-family: var(--font-mono);
+  font-weight: var(--weight-bold);
+  font-size: var(--type-label);
+  letter-spacing: 0.24em;
+  color: var(--zode-orange);
+  line-height: 1;
+}
+
+.zode-drag-spacer {
+  flex: 1 1 auto;
+}
+
+.zode-drag-hint {
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  font-weight: var(--weight-semi);
+  color: var(--zode-text-invert-muted);
+  opacity: 0.7;
+}
+
+.zode-drag-action {
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: var(--zode-ink-3);
+  color: var(--zode-text-invert-muted);
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+}
+
+.zode-drag-action:hover {
+  background: var(--zode-orange);
+  color: var(--zode-white);
+}
+
+/* ---- rail ---------------------------------------------------------------- */
+
+.zode-rail {
+  flex: 0 0 108px;
+  width: 108px;
+  background: var(--zode-ink-2);
+  border-right: 1px solid var(--zode-ink-3);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-4) 0;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.zode-rail::-webkit-scrollbar {
+  display: none;
+}
+
+.zode-rail-tile {
+  width: 76px;
+  height: 76px;
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--tile-radius);
+  background: var(--zode-ink-3);
+  color: var(--zode-text-invert-muted);
+  cursor: pointer;
+  font-family: var(--font-ui);
+  transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+}
+
+.zode-rail-tile:hover {
+  background: var(--zode-ink-4);
+  color: var(--zode-text-invert);
+}
+
+.zode-rail-tile:focus-visible {
+  outline: 2px solid var(--zode-orange);
+  outline-offset: 2px;
+}
+
+.zode-rail-tile[aria-current='true'] {
+  background: var(--zode-orange);
+  color: var(--zode-white);
+}
+
+.zode-rail-label {
+  font-size: var(--type-micro);
+  font-weight: var(--weight-semi);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+/* ---- stage --------------------------------------------------------------- */
+
+.zode-stage {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: auto;
+  padding: var(--space-8) var(--gutter) var(--space-12);
+}
+
+.view {
+  display: none;
+}
+
+.view[data-active='true'] {
+  display: block;
+  animation: zode-reveal var(--dur-base) var(--ease-reveal) both;
+}
+
+@keyframes zode-reveal {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 14px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .view[data-active='true'] {
+    animation: none;
+  }
+
+  .zode-rail-tile,
+  .zode-drag-action {
+    transition: none;
+  }
+}

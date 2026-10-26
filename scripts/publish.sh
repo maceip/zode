@@ -90,10 +90,10 @@ while read -r id tag; do
         "${API}/releases/${id}" \
         -d '{"prerelease":false,"make_latest":"true"}')
     if echo "${RESP}" | grep -q '"prerelease": false'; then
-        echo "    \u2714 ${tag}"
+        echo "    ok   ${tag}"
         FLIPPED=$((FLIPPED + 1))
     else
-        echo "    \u2718 ${tag} \u2014 $(echo "${RESP}" | tr -d '\n' | head -c 120)"
+        echo "    FAIL ${tag} — $(echo "${RESP}" | tr -d '\n' | head -c 120)"
     fi
 done < <(auth "${API}/releases?per_page=100" | python3 -c "
 import sys, json

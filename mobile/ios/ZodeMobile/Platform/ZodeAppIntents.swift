@@ -22,7 +22,6 @@
 
 import AppIntents
 import Foundation
-import MediaIntents
 
 // MARK: - Entity
 

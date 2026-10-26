@@ -46,7 +46,7 @@ final class ActivityLog {
         if let handle = try? FileHandle(forWritingTo: fileURL) {
             handle.seekToEndOfFile()
             handle.write(Data(line.utf8))
-            try? handle.closeToFile()
+            try? handle.closeFile()
             return
         }
         try? Data(line.utf8).write(to: fileURL)

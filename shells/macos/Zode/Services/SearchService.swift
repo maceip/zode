@@ -39,6 +39,18 @@ struct ZodeLibraryItem: Equatable {
     let kind: Kind
     let payload: [String: String]
 
+    /// Builds a library item.
+    ///
+    /// Written out because the `init?(json:)` below suppresses the
+    /// memberwise initialiser.
+    init(id: String, title: String, subtitle: String?, kind: Kind, payload: [String: String]) {
+        self.id = id
+        self.title = title
+        self.subtitle = subtitle
+        self.kind = kind
+        self.payload = payload
+    }
+
     /// The JSON representation used on the wire (contract §2.1).
     var json: [String: Any] {
         var json: [String: Any] = [

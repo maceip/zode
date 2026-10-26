@@ -31,6 +31,19 @@ struct Attachment: Equatable {
     /// The origin of the attachment.
     let source: Source
 
+    /// Builds an attachment.
+    ///
+    /// This has to be written out: the `init?(json:)` below suppresses the
+    /// memberwise initialiser that Swift would otherwise synthesise.
+    init(id: String, name: String, path: String, mimeType: String, size: Int64, source: Source) {
+        self.id = id
+        self.name = name
+        self.path = path
+        self.mimeType = mimeType
+        self.size = size
+        self.source = source
+    }
+
     /// The JSON representation used on the wire (contract §2.1).
     var json: [String: Any] {
         [

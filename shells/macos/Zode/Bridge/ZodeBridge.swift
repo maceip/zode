@@ -137,7 +137,7 @@ final class ZodeBridge: NSObject, WKScriptMessageHandler {
                 throw ZodeBridgeError.invalid("intent.perform requires an 'intent' name.")
             }
             let intentPayload = payload["payload"] as? [String: Any] ?? [:]
-            return intents.perform(name: intent, payload: intentPayload)
+            return try intents.perform(name: intent, payload: intentPayload)
 
         // ---- journal (contract §11) -------------------------------------
         case "journal.write":

@@ -23,6 +23,11 @@
 import AppIntents
 import Foundation
 
+// The result of an App Intent is spelled `AppIntents.IntentResult` here,
+// because this target also has a model called `IntentResult` — the wire
+// format of contract §1 — and the local one would otherwise shadow the
+// framework's protocol.
+
 // MARK: - Entity
 
 /// A library item that can be played.
@@ -145,7 +150,7 @@ public struct SearchLibraryIntent: AppIntent {
         self.query = query
     }
 
-    public func perform() async throws -> some IntentResult & ProvidesDialog {
+    public func perform() async throws -> some AppIntents.IntentResult & ProvidesDialog {
         await IntentBridge.shared.perform(
             contractIntentName,
             payload: ["query": query]
@@ -174,7 +179,7 @@ public struct PlayItemIntent: AppIntent {
         self.item = item
     }
 
-    public func perform() async throws -> some IntentResult & ProvidesDialog {
+    public func perform() async throws -> some AppIntents.IntentResult & ProvidesDialog {
         await IntentBridge.shared.perform(
             contractIntentName,
             payload: ["id": item.id, "kind": item.kind]
@@ -196,7 +201,7 @@ public struct PausePlaybackIntent: AudioPlaybackIntent {
 
     public init() {}
 
-    public func perform() async throws -> some IntentResult {
+    public func perform() async throws -> some AppIntents.IntentResult {
         await IntentBridge.shared.perform(contractIntentName)
         return .result()
     }
@@ -213,7 +218,7 @@ public struct NextTrackIntent: AudioPlaybackIntent {
 
     public init() {}
 
-    public func perform() async throws -> some IntentResult {
+    public func perform() async throws -> some AppIntents.IntentResult {
         await IntentBridge.shared.perform(contractIntentName)
         return .result()
     }
@@ -230,7 +235,7 @@ public struct PreviousTrackIntent: AudioPlaybackIntent {
 
     public init() {}
 
-    public func perform() async throws -> some IntentResult {
+    public func perform() async throws -> some AppIntents.IntentResult {
         await IntentBridge.shared.perform(contractIntentName)
         return .result()
     }
@@ -256,7 +261,7 @@ public struct NewTaskIntent: AppIntent {
         self.prompt = prompt
     }
 
-    public func perform() async throws -> some IntentResult & ProvidesDialog {
+    public func perform() async throws -> some AppIntents.IntentResult & ProvidesDialog {
         await IntentBridge.shared.perform(
             contractIntentName,
             payload: ["prompt": prompt]
@@ -278,7 +283,7 @@ public struct StopTaskIntent: AppIntent {
 
     public init() {}
 
-    public func perform() async throws -> some IntentResult {
+    public func perform() async throws -> some AppIntents.IntentResult {
         await IntentBridge.shared.perform(contractIntentName)
         return .result()
     }
@@ -322,7 +327,7 @@ public struct ShowViewIntent: AppIntent {
         self.view = view
     }
 
-    public func perform() async throws -> some IntentResult & ProvidesDialog {
+    public func perform() async throws -> some AppIntents.IntentResult & ProvidesDialog {
         let raw: String
         switch view {
         case .nowPlaying: raw = "now-playing"

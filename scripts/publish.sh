@@ -81,14 +81,19 @@ echo "==> 2. flipping the pre-releases"
 FLIPPED=0
 # The releases are patched by their numeric id.  The by-tag route answers
 # 404 for a PATCH, which is a confusing way to learn that.
-while read -r id tag; do
+while read -r id tag latest; do
     [ -z "${id}" ] && continue
+    if [ "${latest}" = "latest" ]; then
+        BODY='{"prerelease":false,"make_latest":"true"}'
+    else
+        BODY='{"prerelease":false,"make_latest":"false"}'
+    fi
     RESP=$(curl -sS -X PATCH \
         -H "Authorization: token ${TOKEN}" \
         -H "Accept: application/vnd.github+json" \
         -H "X-GitHub-Api-Version: 2022-11-28" \
         "${API}/releases/${id}" \
-        -d '{"prerelease":false,"make_latest":"true"}')
+        -d "${BODY}")
     if echo "${RESP}" | grep -q '"prerelease": false'; then
         echo "    ok   ${tag}"
         FLIPPED=$((FLIPPED + 1))
@@ -103,11 +108,92 @@ except Exception:
     sys.exit(0)
 if isinstance(releases, dict):
     sys.exit(0)
+# The list is newest first, so only the first one is made the latest.
+# Marking every release as the latest leaves whichever was patched last
+# holding the title, which is the oldest one.
+newest = True
 for r in releases:
     if r.get('prerelease') or r.get('draft'):
-        print(r['id'], r['tag_name'])
+        print(r['id'], r['tag_name'], 'latest' if newest else 'plain')
+        newest = False
 ")
 echo "    ${FLIPPED} flipped"
+
+# "Latest" is a separate thing from the pre-release flag, and it is what
+# /releases/latest resolves to.  The newest release has to be told
+# explicitly, every time — otherwise the title sticks to whichever release
+# happened to be published last.
+# The list comes back with the "latest" release first, so the first entry
+# is not necessarily the newest one — it is whichever release holds the
+# title.  Sort by the creation date instead.
+NEWEST=$(auth "${API}/releases?per_page=100" | python3 -c "
+import sys, json
+try:
+    releases = json.load(sys.stdin)
+except Exception:
+    sys.exit(0)
+if isinstance(releases, dict):
+    sys.exit(0)
+if not releases:
+    sys.exit(0)
+newest = max(releases, key=lambda r: r.get('created_at') or '')
+print(newest.get('id', ''), newest.get('tag_name', ''))
+")
+NEWEST_ID=$(echo "${NEWEST}" | cut -d" " -f1)
+NEWEST_TAG=$(echo "${NEWEST}" | cut -d" " -f2)
+if [ -n "${NEWEST_ID}" ]; then
+    curl -sS -o /dev/null -X PATCH \
+        -H "Authorization: token ${TOKEN}" \
+        -H "Accept: application/vnd.github+json" \
+        -H "X-GitHub-Api-Version: 2022-11-28" \
+        "${API}/releases/${NEWEST_ID}" \
+        -d '{"make_latest":"true"}'
+    echo "    latest -> ${NEWEST_TAG}"
+fi
+
+# The notes of the older releases still claim the disk image is "notarised
+# and stapled".  It is not — it is signed ad-hoc until the Apple secrets
+# are in place.  A false claim in a release note is worse than no note.
+echo "    correcting the older release notes"
+auth "${API}/releases?per_page=100" | python3 -c "
+import sys, json
+try:
+    releases = json.load(sys.stdin)
+except Exception:
+    sys.exit(0)
+if isinstance(releases, dict):
+    sys.exit(0)
+for r in releases:
+    body = r.get('body') or ''
+    if 'notarised and stapled' in body and 'not notarised' not in body:
+        body = body.replace(
+            'The disk image is signed, notarised and stapled, so it opens without a\nGatekeeper warning. If your copy still warns, right-click the app inside\nthe disk image and choose **Open** once.',
+            '> This disk image is **not notarised** — it is signed ad-hoc.  A copy\n> downloaded from here gets the macOS \"downloaded from the internet\" warning and\n> may be moved to the Trash.  Right-click the app inside the disk image\n> and choose **Open** once, or build it yourself on your own Mac.')
+        body = body.replace(
+            'The disk image is signed, **notarised**, stapled',
+            'The disk image is signed; it is **not notarised**')
+        print(r['id'])
+" > /tmp/.zode_stale_ids
+while read -r id; do
+    [ -z "${id}" ] && continue
+    auth "${API}/releases/${id}" | python3 -c "
+import json, sys
+r = json.load(sys.stdin)
+body = r.get('body') or ''
+body = body.replace(
+    'The disk image is signed, notarised and stapled, so it opens without a\nGatekeeper warning. If your copy still warns, right-click the app inside\nthe disk image and choose **Open** once.',
+    '> This disk image is **not notarised** — it is signed ad-hoc.  A copy\n> downloaded from here gets the macOS \"downloaded from the internet\" warning and\n> may be moved to the Trash.  Right-click the app inside the disk image\n> and choose **Open** once, or build it yourself on your own Mac.')
+body = body.replace(
+    'The disk image is signed, **notarised**, stapled',
+    'The disk image is signed; it is **not notarised**')
+print(json.dumps({'body': body}))
+" | curl -sS -o /dev/null -w "    %{http_code} release ${id}\n" -X PATCH \
+        -H "Authorization: token ${TOKEN}" \
+        -H "Accept: application/vnd.github+json" \
+        -H "X-GitHub-Api-Version: 2022-11-28" \
+        "${API}/releases/${id}" \
+        -d @-
+done < /tmp/.zode_stale_ids
 
 # ---------------------------------------------------------------------------
 echo "==> 3. the Apple secrets"

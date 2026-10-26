@@ -35,6 +35,11 @@ export const ICONS = {
     { d: 'M6.6 1.5 A5.1 5.1 0 1 0 6.6 11.7 A5.1 5.1 0 0 0 6.6 1.5 Z' },
     { d: 'M10.4 10.4 L14.4 14.4' },
   ],
+  // Half-filled disc: the classic light/dark affordance.
+  theme: [
+    { d: 'M8 0.8 A7.2 7.2 0 1 0 8 15.2 A7.2 7.2 0 0 0 8 0.8 Z' },
+    { d: 'M8 0.8 A7.2 7.2 0 0 0 8 15.2 Z', fill: true },
+  ],
   agent: [{ d: 'M8 0.8 L9.4 6 L14.2 7.4 L9.4 8.8 L8 14 L6.6 8.8 L1.8 7.4 L6.6 6 Z', fill: true }],
   play: [{ d: 'M4 2 L13 8 L4 14 Z', fill: true }],
   pause: [

@@ -90,11 +90,21 @@ for (const v of views) {
 }
 
 // --- the light canvas too --------------------------------------------------
-await page.evaluate(() => {
-  document.documentElement.classList.remove('on-ink');
-  document.documentElement.classList.add('on-paper');
+// Click the real canvas toggle in the drag strip, the way a user would.
+await page.evaluate(async () => {
+  await window.zode.performIntent('zode.show', { view: 'collection' });
 });
-await page.waitForTimeout(300);
+await page.waitForTimeout(400);
+const toggled = await page.evaluate(() => {
+  const button = document.querySelector('[data-zode-drag-zone="true"] button[aria-label="Switch canvas"]');
+  if (!button) return false;
+  button.click();
+  return true;
+});
+console.log('canvas toggle found:', toggled);
+await page.waitForTimeout(400);
+const theme = await page.evaluate(() => document.documentElement.getAttribute('data-theme'));
+console.log('theme now:', theme);
 await page.screenshot({ path: path.join(OUT, 'web-paper.png') });
 console.log('shot paper canvas');
 

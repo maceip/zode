@@ -66,12 +66,48 @@ export function createApp({ doc, win, zode, bridge }) {
   app.appendChild(shell);
   root.appendChild(app);
 
+  // --------------------------------------------------------------- canvas
+  /**
+   * Switch between the ink and the paper canvas.
+   *
+   * The iOS and Android clients offer both; the web app offers the same warm
+   * paper so the three surfaces feel identical. The choice is remembered, so
+   * it survives a reload.
+   */
+  const THEME_KEY = 'zode.theme';
+
+  const applyTheme = (theme) => {
+    const element = doc.documentElement;
+    if (!element) return;
+    if (theme === 'paper') element.setAttribute('data-theme', 'paper');
+    else element.removeAttribute('data-theme');
+  };
+
+  const toggleTheme = () => {
+    const element = doc.documentElement;
+    const next = element?.getAttribute('data-theme') === 'paper' ? 'ink' : 'paper';
+    applyTheme(next);
+    try {
+      win.localStorage?.setItem(THEME_KEY, next);
+    } catch (error) {
+      // A webview with storage disabled is fine — the theme just is not sticky.
+    }
+  };
+
+  try {
+    const saved = win.localStorage?.getItem(THEME_KEY);
+    if (saved === 'paper') applyTheme('paper');
+  } catch (error) {
+    // No storage; the ink canvas is the default.
+  }
+
   const dragZone = createDragZone({
     doc,
     zode,
     host: doc.body ?? root,
     actions: {
       onSearch: () => router.navigate('search'),
+      onToggleTheme: () => toggleTheme(),
       onAgent: () => router.navigate('agent'),
     },
   });

@@ -112,6 +112,10 @@ Both desktop shells obey the same five rules, defined in contract §5:
    Spaces stay put).
 5. **Nothing below the strip moves the window.**
 
+The strip also carries the app's own controls (search, canvas, new task) — they are excluded
+from the drag, exactly as the contract requires.
+
+
 ## Platform capability matrix
 
 Honest about what each platform can actually do:

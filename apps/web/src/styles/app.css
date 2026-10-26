@@ -23,6 +23,23 @@ body {
   overflow: hidden;
 }
 
+/* -----------------------------------------------------------------------------
+   The warm-paper canvas.
+
+   Every surface in the app is painted with the ink/paper token variables, so
+   switching the canvas is a matter of re-pointing those variables — the same
+   warm paper the iOS and Android clients offer. `data-theme` is set on the
+   document element by the canvas toggle in the drag strip.
+   -------------------------------------------------------------------------- */
+[data-theme='paper'] {
+  --zode-ink: #f4f2ef;
+  --zode-ink-2: #e5e1db;
+  --zode-ink-3: #d2ccc3;
+  --zode-ink-4: #bdb5a9;
+  --zode-text-invert: #161616;
+  --zode-text-invert-muted: #6a6660;
+}
+
 body {
   overscroll-behavior: none;
 }

@@ -111,6 +111,9 @@ export function createDragZone({ doc, zode, host, actions = {} }) {
   if (actions.onSearch) {
     strip.appendChild(makeAction('search', 'Search (⌘F)', actions.onSearch));
   }
+  if (actions.onToggleTheme) {
+    strip.appendChild(makeAction('theme', 'Switch canvas', actions.onToggleTheme));
+  }
   if (actions.onAgent) {
     strip.appendChild(makeAction('agent', 'New agent task', actions.onAgent));
   }

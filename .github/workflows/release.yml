@@ -40,6 +40,14 @@ jobs:
           java-version: "17"
 
       - uses: android-actions/setup-android@v3
+        with:
+          # The default of the action asks for a package called "tools", which
+          # the SDK repository no longer carries, and "latest" resolves to a
+          # preview of the command line tools that demands its own licence
+          # acceptance.  Both are pinned here.
+          cmdline-tools-version: '12266719'
+          packages: 'platform-tools platforms;android-36 build-tools;36.0.0'
+          accept-android-sdk-licenses: true
 
       - name: Read the version
         id: ver

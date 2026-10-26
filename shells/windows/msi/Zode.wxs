@@ -11,6 +11,11 @@
   WiX v5 harvests a whole directory with the <Files> element, so there is no
   heat.exe and no XSLT here.
 
+  WiX only runs on Windows — the toolset says so itself ("all behavior
+  after this point is undefined" on other platforms), and it rejects every
+  relative directory path when it is not on Windows.  So the installer is
+  built on the Windows runner.
+
   Build it with the wix tool (install it globally with the dotnet CLI, then):
 
       wix build shells\windows\msi\Zode.wxs ^
@@ -59,8 +64,7 @@
                     Description="Zode — code content before chrome"
                     Target="[INSTALLFOLDER]Zode.Shell.exe"
                     WorkingDirectory="INSTALLFOLDER"
-                    Icon="ZodeIcon"
-                    Register="yes" />
+                    Icon="ZodeIcon" />
           <RemoveFolder Id="RemoveShortcutFolder" Directory="ShortcutFolder" On="uninstall" />
           <RegistryValue Root="HKCU"
                          Key="Software\Zode"

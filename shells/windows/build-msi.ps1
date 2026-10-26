@@ -49,6 +49,10 @@ param(
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
+# WiX v5 is the version the installer source is written against: the
+# <Files> element that harvests a whole directory is a v5 feature.
+$WixVersion = '5.0.2'
+
 $scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $projectFile = Join-Path $scriptRoot 'Zode.Shell\Zode.Shell.csproj'
 $iconFile = Join-Path $scriptRoot 'icons\zode.ico'
@@ -154,15 +158,21 @@ function Get-WixCommand {
 
     if (Get-Command wix -ErrorAction SilentlyContinue) { return 'wix' }
 
-    Write-Step "installing the WiX toolset (dotnet tool install --global wix)"
-    & dotnet tool install --global wix
+    Write-Step "installing the WiX toolset $WixVersion"
+    # The version is pinned: the <Files> element of the installer source is a
+    # WiX v5 feature, and a newer major version may change it.
+    & dotnet tool uninstall --global wix 2>$null | Out-Null
+    # The install prints to stdout.  It must NOT become the return value of
+    # this function, or the caller ends up running the install message as if
+    # it were the path of the tool.
+    & dotnet tool install --global wix --version $WixVersion | Out-Host
     if ($LASTEXITCODE -ne 0) {
         Write-Fail @"
 The WiX toolset could not be installed.
 
 Install it by hand and run this script again:
 
-    dotnet tool install --global wix
+    dotnet tool install --global wix --version $WixVersion
 
 (or download it from https://wixtoolset.org and put wix.exe on PATH).
 "@

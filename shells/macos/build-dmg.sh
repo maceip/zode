@@ -162,20 +162,24 @@ if [ -f "${APP}/Contents/Info.plist" ]; then
 fi
 
 log "Signing the app"
-if [ -n "${IDENTITY:-}" ]; then
+if [ -n "${IDENTITY:-}" ] && codesign --force --options runtime --timestamp \
+        --entitlements "${ENTITLEMENTS}" \
+        --sign "${IDENTITY}" "${APP}" 2>/dev/null; then
     # --options runtime : the hardened runtime, required for notarisation
     # --timestamp       : the secure timestamp Apple requires
     # --entitlements    : the app needs the network + file entitlements
-    codesign --force --options runtime --timestamp \
-        --entitlements "${ENTITLEMENTS}" \
-        --sign "${IDENTITY}" "${APP}" || die "codesign failed"
     info "signed with: ${IDENTITY}"
 else
-    # Ad-hoc: no identity on this machine.  Fine for local use, useless for
-    # Gatekeeper.  No --timestamp (that needs a real certificate).
+    # Ad-hoc: no usable identity on this machine.  Fine for local use,
+    # useless for Gatekeeper.  No --timestamp (that needs a real
+    # certificate).  A machine that has certificates without their private
+    # key — a CI runner, for instance — ends up here too.
+    if [ -n "${IDENTITY:-}" ]; then
+        warn "could not sign with '${IDENTITY}' — falling back to an ad-hoc signature."
+    fi
     codesign --force --entitlements "${ENTITLEMENTS}" --sign - "${APP}" \
         || die "ad-hoc codesign failed"
-    warn "no codesigning identity was found — signed ad-hoc."
+    warn "signed ad-hoc: no Developer ID Application certificate was usable."
     warn "ad-hoc signatures do NOT satisfy Gatekeeper; a downloaded copy will"
     warn "be moved to the Trash.  See docs/RELEASING.md."
 fi

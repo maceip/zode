@@ -113,9 +113,12 @@ public final class HapticEngine: ObservableObject {
     private func play(_ program: HapticProgram, loop: Bool, on engine: CHHapticEngine) {
         do {
             let pattern = try makePattern(program)
+            // The engine is started first, and then the player — there is no
+            // overload of `start` that takes the player.
+            try engine.start()
             let player = try engine.makeAdvancedPlayer(with: pattern)
             player.loopEnabled = loop && program.loops
-            try engine.start(player)
+            try player.start(atTime: CHHapticTimeImmediate)
             players[program.name] = player
         } catch {
             // A failed pattern must never crash the app; fall back to the
@@ -186,7 +189,7 @@ public final class HapticEngine: ObservableObject {
                             parameterID: .hapticIntensityControl,
                             controlPoints: track.intensity.map {
                                 CHHapticParameterCurve.ControlPoint(
-                                    relativeTime: Float($0.time),
+                                    relativeTime: TimeInterval($0.time),
                                     value: Float($0.value)
                                 )
                             },

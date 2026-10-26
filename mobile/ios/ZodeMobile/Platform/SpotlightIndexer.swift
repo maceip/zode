@@ -17,6 +17,17 @@ public final class SpotlightIndexer {
     /// The domain used for every Zode item.
     public static let domain = "com.zode.app.library"
 
+    /// An attribute set with a content type of our own.
+    ///
+    /// Foundation has no `UTType` for an album, an artist or a playlist, so
+    /// the type is given as a UTI string.  Spotlight does not mind, as long
+    /// as it is a well formed identifier.
+    private static func attributes(contentType: String) -> CSSearchableItemAttributeSet {
+        let attributes = CSSearchableItemAttributeSet(contentType: .audio)
+        attributes.contentType = contentType
+        return attributes
+    }
+
     private let library: Library
 
     public init(library: Library) {
@@ -36,8 +47,8 @@ public final class SpotlightIndexer {
             attributes.displayName = track.title
             attributes.genre = track.genre
             attributes.artist = artist
-            attributes.albumName = album
-            attributes.mediaType = CSSearchableItemMediaType.audio
+            // `albumName` and `mediaType` are macOS only, so the album goes
+            // into the description instead.
             attributes.duration = NSNumber(value: track.durationSeconds)
             attributes.addedDate = Date()
 
@@ -52,12 +63,11 @@ public final class SpotlightIndexer {
 
         for album in library.albums {
             let artist = library.artist(album.artistID)?.name ?? ""
-            let attributes = CSSearchableItemAttributeSet(contentType: .album)
+            let attributes = Self.attributes(contentType: "com.zode.album")
             attributes.title = album.title
             attributes.displayName = album.title
             attributes.contentDescription = "\(artist) — \(album.year)"
             attributes.artist = artist
-            attributes.albumName = album.title
 
             let item = CSSearchableItem(
                 uniqueIdentifier: "album:\(album.id)",
@@ -68,7 +78,7 @@ public final class SpotlightIndexer {
         }
 
         for artist in library.artists {
-            let attributes = CSSearchableItemAttributeSet(contentType: .musicArtist)
+            let attributes = Self.attributes(contentType: "com.zode.artist")
             attributes.title = artist.name
             attributes.displayName = artist.name
             attributes.genre = artist.genre
@@ -82,7 +92,7 @@ public final class SpotlightIndexer {
         }
 
         for playlist in library.playlists {
-            let attributes = CSSearchableItemAttributeSet(contentType: .collection)
+            let attributes = Self.attributes(contentType: "com.zode.playlist")
             attributes.title = playlist.title
             attributes.displayName = playlist.title
             attributes.contentDescription = playlist.subtitle

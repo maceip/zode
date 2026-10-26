@@ -68,7 +68,19 @@ public final class AppState: ObservableObject {
     }
 
     private var cancellables: Set<AnyCancellable> = []
+    /// The cancellation closures of the agent event handlers.  `onEvent`
+    /// hands one back so the handler can be removed again; throwing it away
+    /// is what the compiler calls "function is unused".
+    private var agentEventCancellations: [() -> Void] = []
     private var attachmentCounter = 0
+
+    deinit {
+        // The agent event handlers are removed again when the app state goes
+        // away, so nothing keeps a strong reference to it.
+        for cancel in agentEventCancellations {
+            cancel()
+        }
+    }
 
     public init() {
         library = Library.seeded()
@@ -87,9 +99,9 @@ public final class AppState: ObservableObject {
 
         // The agent drives the haptics: `working` on start, `done` on success,
         // `error` on failure. These are the same triggers the web app uses.
-        agent.onEvent { [weak self] event in
+        agentEventCancellations.append(agent.onEvent { [weak self] event in
             self?.handleAgentEvent(event)
-        }
+        })
 
         // App Intents that arrive while the app is running.
         NotificationCenter.default.publisher(for: .zodeAppIntent)
@@ -99,8 +111,10 @@ public final class AppState: ObservableObject {
                       let info = note.userInfo,
                       let intent = info["intent"] as? String else { return }
                 var payload: [String: String] = [:]
-                for (key, value) in info {
-                    if let text = value as? String, key != "intent" {
+                for (rawKey, value) in info {
+                    // The user info of a notification is [AnyHashable: Any].
+                    guard let key = rawKey as? String, key != "intent" else { continue }
+                    if let text = value as? String {
                         payload[key] = text
                     }
                 }

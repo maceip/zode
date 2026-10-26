@@ -24,10 +24,19 @@ cd "$(dirname "$0")/.." || exit 1
 
 REPO="${GITHUB_REPO:-maceip/zode}"
 API="https://api.github.com/repos/${REPO}"
+
+# The token can come from the environment or from a file.  The file is the
+# better option: it survives a /tmp wipe, it never appears in argv, and it
+# never appears in `ps`.
+TOKEN_FILE="${ZODE_TOKEN_FILE:-/workspace/.zode-token}"
 TOKEN="${GITHUB_TOKEN:-${GH_TOKEN:-}}"
+if [ -z "${TOKEN}" ] && [ -r "${TOKEN_FILE}" ]; then
+    TOKEN="$(cat "${TOKEN_FILE}")"
+fi
 
 if [ -z "${TOKEN}" ]; then
-    echo "set GITHUB_TOKEN to a token with write access to ${REPO}"
+    echo "no token found."
+    echo "  either set GITHUB_TOKEN, or put one in ${TOKEN_FILE}"
     exit 1
 fi
 

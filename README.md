@@ -351,13 +351,19 @@ The one-time Apple setup that notarisation needs is in
   are valid XML/JSON and cover every intent.
 - Icons regenerate byte-identically. No credential material is committed.
 
-**Verified in CI, on real runners** — `.github/workflows/ci.yml` runs on genuine macOS,
-Windows and Android machines and therefore does what a Linux authoring box cannot:
+**Verified in CI, on real runners** — [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs on
+genuine macOS, Windows and Android machines and does what a Linux authoring box cannot:
 
 - `xcodebuild` **compiles** the macOS shell.
 - `dotnet build` **compiles** the Windows shell.
 - `xcodebuild` **compiles** the iOS client for the simulator.
 - `./gradlew :app:assembleDebug` **assembles** the Android APK.
+- The icons regenerate **byte-identically**, and the web app's own self-check passes.
+
+**The Windows shell also compiles on Linux.** The project sets `EnableWindowsTargeting`, so the
+.NET SDK restores the Windows SDK projections and the WebView2 references and compiles the same
+sources the Windows runner does. `scripts/check_windows_build.sh` runs it, so a Win32 compile
+error is caught in seconds rather than waiting for CI.
 
 **Still needs a human with the hardware:**
 
@@ -366,7 +372,8 @@ Windows and Android machines and therefore does what a Linux authoring box canno
 - Whether the triple-roll "done" and the tiny slow "working" wave actually *sound* like a
   triple roll and a slow wave. The waveforms are correct as data; only ears can confirm them.
 - Dock / taskbar drop end to end.
-- Signing with a real developer profile.
+- Signing and **notarisation** with a real Developer ID. The release workflow signs ad-hoc until
+  the Apple secrets are added — see [docs/RELEASING.md](docs/RELEASING.md).
 - Siri, Spotlight, App Actions and the Journal integration end to end.
 
 Each platform's `deliverable.md` separates *verified* from *not verified*. Read
@@ -379,13 +386,14 @@ Each platform's `deliverable.md` separates *verified* from *not verified*. Read
 ./scripts/verify.sh        # every check that does not need a Mac / Windows box
 ```
 
-It runs 16 checks and skips 4 that genuinely need hardware (the macOS, Windows and Android
+It runs 17 checks and skips 4 that genuinely need hardware (the macOS, Windows and Android
 compiles, and the iOS compile). Two of the checks want a toolchain and **skip quietly** when it
 is not installed, so the script works on a bare machine:
 
 ```bash
-./scripts/check_swift.sh    # needs a Swift compiler   (swiftc -parse)
-./scripts/check_csharp.sh   # needs the .NET SDK       (Roslyn parse, no Windows needed)
+./scripts/check_swift.sh        # needs a Swift compiler   (swiftc -parse)
+./scripts/check_csharp.sh       # needs the .NET SDK       (Roslyn parse, no Windows needed)
+./scripts/check_windows_build.sh # needs the .NET SDK      (the real Windows compile)
 ```
 
 Both are syntax checks, not type checks — they cannot replace `xcodebuild` and `dotnet build`,

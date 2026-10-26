@@ -203,7 +203,7 @@ public final class HapticEngine: ObservableObject {
                             parameterID: .hapticSharpnessControl,
                             controlPoints: track.sharpness.map {
                                 CHHapticParameterCurve.ControlPoint(
-                                    relativeTime: Float($0.time),
+                                    relativeTime: TimeInterval($0.time),
                                     value: Float($0.value)
                                 )
                             },

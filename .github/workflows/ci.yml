@@ -201,6 +201,20 @@ jobs:
           plutil -lint shells/macos/Zode/Info.plist
           plutil -lint shells/macos/Zode.entitlements
 
+      - name: The shell can start and finds its resources
+        run: |
+          # The self test needs no window and no webview, so it runs on the
+          # built app exactly as it is.
+          APP=$(find "$HOME/Library/Developer/Xcode/DerivedData" shells/macos \
+                 -name "Zode.app" -type d -path "*Debug*" 2>/dev/null | head -1)
+          if [ -z "$APP" ]; then
+            echo "the built app was not found" >&2
+            exit 1
+          fi
+          echo "testing $APP"
+          "$APP/Contents/MacOS/Zode" --selftest
+          echo "the shell proved itself"
+
   # ---------------------------------------------------------------------------
   # Windows shell — REAL C# compilation on a real Windows runner.
   # ---------------------------------------------------------------------------
@@ -224,6 +238,20 @@ jobs:
         run: |
           cd shells/windows
           dotnet build Zode.Shell/Zode.Shell.csproj -c Release -v minimal
+
+      - name: The shell can start and finds its resources
+        shell: pwsh
+        run: |
+          # The web app has to sit next to the executable — the shell reads
+          # it from AppContext.BaseDirectory\web, and it is what the
+          # self test proves.
+          $out = "shells/windows/Zode.Shell/bin/Release/net10.0-windows10.0.26100.0"
+          Copy-Item -Recurse -Force apps/web "$out/web"
+          $exe = "$out/Zode.Shell.exe"
+          if (-not (Test-Path $exe)) { throw "the executable is missing: $exe" }
+          & $exe --selftest
+          if ($LASTEXITCODE -ne 0) { throw "the shell self test failed (exit $LASTEXITCODE)" }
+          Write-Host "the shell proved itself"
 
       - name: App Actions and manifest are valid
         run: |

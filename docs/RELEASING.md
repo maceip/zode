@@ -145,6 +145,26 @@ spctl --assess --type open --context context:primary-signature -v shells/macos/b
 
 ---
 
+## Before anything is published
+
+Every release is opened and checked before it is attached:
+
+| Check | What it proves |
+|---|---|
+| `scripts/check_artifacts.py` | The `.zip` has the launcher **and** the .NET runtime **and** the `web/` folder; the `.apk` has the manifest, the dex and the shared data; the `.dmg` has the app binary, the web app, the haptics and the icon |
+| `Zode.Shell.exe --selftest` | The portable build in the `.zip` actually starts and finds its resources |
+| `Zode.app/Contents/MacOS/Zode --selftest` | The app inside the `.dmg` actually starts and finds its resources |
+
+The self test resolves its resources the same way the app does, so it
+cannot pass by accident.
+
+**A bare `.exe` is never published.** The publish is self-contained, so
+`Zode.Shell.exe` is only the ~520 KB apphost launcher; it needs the ~100 MB
+of runtime files and the `web/` folder beside it to start. It once shipped on
+its own, downloaded fine, and then did nothing.
+
+---
+
 ## Windows
 
 ```bash

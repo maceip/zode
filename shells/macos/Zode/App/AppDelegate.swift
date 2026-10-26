@@ -22,6 +22,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - Launch
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // The self test runs before the window exists, so it works headless
+        // and the CI job and the release job can use it on the artifact
+        // they are about to publish.
+        if CommandLine.arguments.contains("--selftest") {
+            let ok = SelfTest.run()
+            exit(ok ? 0 : 1)
+        }
+
         let bridge = ZodeBridge()
         let webView = ZodeWebView(frame: .zero, bridge: bridge)
         let model = ZodeAppModel(bridge: bridge, webView: webView)

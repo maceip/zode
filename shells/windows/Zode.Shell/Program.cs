@@ -11,6 +11,14 @@ internal static class Program
     [STAThread]
     private static int Main(string[] args)
     {
+        // The self test runs before anything else: no window, no webview,
+        // no single instance guard.  It is how CI and the release job prove
+        // that the artifact they are about to publish actually works.
+        if (args.Any(a => string.Equals(a, "--selftest", StringComparison.OrdinalIgnoreCase)))
+        {
+            return SelfTest.Run();
+        }
+
         // OLE has to be initialised for the drag & drop registration.
         Ole32.OleInitialize(IntPtr.Zero);
         try

@@ -413,6 +413,38 @@ Each platform's `deliverable.md` separates *verified* from *not verified*. Read
 [`docs/PLATFORM-NOTES.md`](docs/PLATFORM-NOTES.md) for the per-platform detail and
 [`packages/shared/contract.md`](packages/shared/contract.md) for the full bridge specification.
 
+## The shells can prove themselves
+
+Both desktop shells have a `--selftest` mode:
+
+```bash
+Zode.app/Contents/MacOS/Zode --selftest
+Zode.Shell.exe --selftest
+```
+
+It resolves its resources exactly the way the app does — no test-only code
+path — and prints one line per check: the web folder is next to the
+executable, `index.html` is the real app and not the placeholder, the
+haptics and the library parse. It needs no window and no webview, so it
+runs headless.
+
+**This exists because of a mistake.** A release once shipped a bare
+`Zode.Shell.exe`. It was only the ~520 KB apphost launcher of a
+self-contained publish, so it downloaded fine and then did nothing at all:
+the ~100 MB of .NET runtime files and the `web/` folder were not next to it.
+
+So now:
+
+- The **release job** unpacks the `.zip` it is about to publish and runs the
+  shell inside it, mounts the `.dmg` and runs the shell inside that, and
+  opens every artifact with `scripts/check_artifacts.py` to confirm the
+  pieces are inside it. Nothing is published until all of that passes.
+- The **CI jobs** run the same self test on the built shell.
+- There is **no bare `.exe`** in the release, and a check makes sure one
+  cannot come back.
+
+---
+
 ## Verifying it yourself
 
 ```bash

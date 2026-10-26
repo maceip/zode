@@ -193,6 +193,29 @@ else
 fi
 
 # ---------------------------------------------------------------------------
+stage "4b. the app in the disk image runs"
+# ---------------------------------------------------------------------------
+# The shell can prove itself: it resolves its resources the same way the
+# app does and reports whether they are all there.  This is the check that
+# catches an app bundle that was packaged without its web app.
+DMG="shells/macos/build/Zode.dmg"
+if [ -f "$DMG" ]; then
+    MOUNT=$(mktemp -d)
+    if hdiutil attach "$DMG" -nobrowse -readonly -mountpoint "$MOUNT" >/dev/null 2>&1; then
+        if "$MOUNT/Zode.app/Contents/MacOS/Zode" --selftest; then
+            ok "the app inside the disk image starts and finds its resources"
+        else
+            bad "the app inside the disk image does not pass its self test"
+        fi
+        hdiutil detach "$MOUNT" >/dev/null 2>&1
+    else
+        bad "the disk image could not be mounted"
+    fi
+else
+    bad "no disk image to test"
+fi
+
+# ---------------------------------------------------------------------------
 stage "5. report"
 # ---------------------------------------------------------------------------
 printf '\n%s  Zode on the Mac — summary%s\n' "$BOLD" "$OFF"

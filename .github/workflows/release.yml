@@ -96,6 +96,23 @@ jobs:
           # Self-contained, so the installed app needs no .NET runtime.
           ./shells/windows/build-msi.ps1 -Configuration Release -SelfContained
 
+      - name: The portable build starts and finds its resources
+        shell: pwsh
+        run: |
+          # Unpack the zip that is about to be published and run the shell
+          # inside it.  This is the check that catches a launcher without
+          # its runtime beside it: the process would not even start.
+          $zip = Get-ChildItem shells/windows/artifacts/release/*.zip | Select-Object -First 1
+          if (-not $zip) { throw "no zip was built" }
+          $out = Join-Path $env:RUNNER_TEMP "zode-portable"
+          Remove-Item -Recurse -Force $out -ErrorAction SilentlyContinue
+          Expand-Archive -Path $zip.FullName -DestinationPath $out
+          $exe = Join-Path $out "Zode.Shell.exe"
+          if (-not (Test-Path $exe)) { throw "the executable is missing from the zip" }
+          & $exe --selftest
+          if ($LASTEXITCODE -ne 0) { throw "the shell self test failed (exit $LASTEXITCODE)" }
+          Write-Host "the shipped portable build proved itself"
+
       - name: Collect the artifacts
         shell: pwsh
         run: |
@@ -205,6 +222,22 @@ jobs:
             echo "notarized=not-notarized" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: The disk image starts and finds its resources
+        run: |
+          # Mount the image that is about to be published and run the shell
+          # inside it.  A disk image with a broken app bundle would still
+          # download fine — this is what proves it works.
+          DMG=$(ls shells/macos/build/*.dmg 2>/dev/null | head -1)
+          if [ -z "$DMG" ]; then
+            echo "no disk image was built" >&2
+            exit 1
+          fi
+          MOUNT=$(mktemp -d)
+          hdiutil attach "$DMG" -nobrowse -readonly -mountpoint "$MOUNT" >/dev/null
+          "$MOUNT/Zode.app/Contents/MacOS/Zode" --selftest
+          hdiutil detach "$MOUNT" >/dev/null
+          echo "the shipped disk image proved itself"
+
       - name: Collect the disk image
         run: |
           mkdir -p dist
@@ -239,6 +272,13 @@ jobs:
       - name: Read the version
         id: ver
         run: echo "version=$(cat VERSION | tr -d '[:space:]')" >> "$GITHUB_OUTPUT"
+
+      - name: The artifacts are complete
+        run: |
+          # A release once shipped a bare .exe that downloaded fine and then
+          # did nothing.  Nothing gets published until every artifact has
+          # been opened and found whole.
+          python3 scripts/check_artifacts.py artifacts/*
 
       - name: Write the release notes
         env:

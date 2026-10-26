@@ -241,6 +241,43 @@ def check_no_bare_exe() -> None:
           "docs/RELEASING.md does not say why there is no bare .exe")
 
 
+def check_self_test_wiring() -> None:
+    """The shells must be able to prove themselves, and CI must ask them to.
+
+    A release once shipped a bare `Zode.Shell.exe`: it downloaded fine and
+    then did nothing, because the runtime and the web app were not next to
+    it.  The guard against that is a `--selftest` mode in both shells and a
+    CI job that runs it on the artifact it is about to publish.
+    """
+    check("the Windows shell has a self test",
+          exists("shells", "windows", "Zode.Shell", "Diagnostics", "SelfTest.cs"))
+    check("the macOS shell has a self test",
+          exists("shells", "macos", "Zode", "Diagnostics", "SelfTest.swift"))
+    check("the artifact inspector exists",
+          exists("scripts", "check_artifacts.py"))
+
+    for wf in (".github/workflows/ci.yml", ".github/workflows/release.yml"):
+        text = read(*wf.split("/"))
+        check(f"{wf} runs the shell self test",
+              "--selftest" in text,
+              "no --selftest in the workflow")
+
+    # CI builds but publishes nothing, so the inspector belongs to the
+    # release job — it is the one that opens the artifacts.
+    release = read(".github", "workflows", "release.yml")
+    check("the release opens every artifact before publishing it",
+          "check_artifacts.py" in release,
+          "the artifacts are never opened before they are published")
+
+    # The self test has to run on the artifact, not on a build in the middle
+    # of the process.
+    release = read(".github", "workflows", "release.yml")
+    check("the release mounts the disk image it is about to publish",
+          "hdiutil attach" in release and "Zode.app/Contents/MacOS/Zode" in release)
+    check("the release unpacks the zip it is about to publish",
+          "Expand-Archive" in release and "Zode.Shell.exe" in release)
+
+
 def main() -> int:
     print("  release tooling")
     check_release_workflow()
@@ -249,6 +286,7 @@ def main() -> int:
     check_version()
     check_notarisation_fallback()
     check_no_bare_exe()
+    check_self_test_wiring()
 
     print(f"\n  {CHECKS - len(FAILURES)}/{CHECKS} release checks passed")
     return 1 if FAILURES else 0
